@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Appropriateness Filtering for Corporate RAG Database Storage | CSCI 5541 (Fall 2025)</title>
+  <link rel="stylesheet" href="./files/bulma.min.css" />
+  <link rel="stylesheet" href="./files/styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com/" />
+  <link href="./files/css2" rel="stylesheet" />
+  <link href="./files/css" rel="stylesheet" />
+  <base href="." target="_blank" />
+  <style>
+    .wrapper{max-width:980px;margin:0 auto;padding:24px}
+    .sys-img img{width:100%;height:auto}
+    .authors-wrapper{display:flex;gap:18px;flex-wrap:wrap}
+    .author-container{display:flex;flex-direction:column;align-items:center}
+    .author-image img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#eee}
+    .taglist{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+    .kbd{background:#f5f5f5;border:1px solid #ddd;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:monospace}
+    table{margin:0 auto}
+    caption{caption-side:bottom;padding-top:8px}
+    .note{font-size:.95rem;color:#444}
+    .callout{background:#f7fbff;border:1px solid #cfe8ff;border-radius:10px;padding:12px}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1 style="font-family:'Lato',sans-serif;">Appropriateness Filtering for Corporate RAG Database Storage</h1>
+    <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
+    <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
+
+    <div class="authors-wrapper">
+      <div class="author-container">
+        <div class="author-image"><img src="" alt="" /></div>
+        <p>A. Berg<br/><small><a href="mailto:ber00221@umn.edu">ber00221@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="" alt="" /></div>
+        <p>Z. Johnson<br/><small><a href="mailto:joh15514@umn.edu">joh15514@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="" alt="" /></div>
+        <p>A. Slinger<br/><small><a href="mailto:sling031@umn.edu">sling031@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="" alt="" /></div>
+        <p>S. Subramanian<br/><small><a href="mailto:subra287@umn.edu">subra287@umn.edu</a></small></p>
+      </div>
+    </div>
+
+    <br/>
+
+    <div class="authors-wrapper">
+      <div class="publication-links">
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Final Report</span></a>
+        </span>
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code</span></a>
+        </span>
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Model Weights</span></a>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrapper">
+    <hr />
+
+    <h2 id="abstract">Abstract</h2>
+
+    <p>
+      Retrieval‑Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre‑embedding filtering</b> framework that decomposes messages into claim‑level units and scores each with a modular MoE of fine‑tuned RoBERTa‑large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre‑filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM‑prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+    </p>
+
+    <hr />
+
+    <h2 id="teaser">Teaser Figure</h2>
+    <p class="note">High‑level dataflow: ingestion → claim splitting → MoE appropriateness filters → Claim DB → RAG/Q&amp;A chat. The pre‑filter aims to reduce "rubbish in, rubbish out."</p>
+    <p class="sys-img"><img src="./files/prj diagram.png" alt="Project diagram showing modular pre‑filter before RAG" /></p>
+
+    <hr />
+
+    <h2 id="introduction">Introduction / Background / Motivation</h2>
+    <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
+    <p><b>Gap.</b> Prior work emphasizes post‑retrieval tricks (graph fusion, RRF); little evaluates <i>source‑level</i> filtering before embedding when full context (headers/threads) is available.</p>
+    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post‑hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
+    <hr />
+
+    <h2 id="approach">Approach</h2>
+    <div class="callout">
+      <ol>
+        <li><b>Ingestion.</b> Gmail API (demo) + ENRON emails. Parse message text, headers, and thread context.</li>
+        <li><b>Claim decomposition.</b> Split into atomic statements suitable for classification and retrieval.</li>
+        <li><b>MoE filtering.</b> Fine‑tuned RoBERTa‑large heads score: <i>Confidentiality/PII</i>, <i>Personal info</i>, <i>Sarcasm</i>, <i>Speculation/Opinion</i>, <i>Toxicity</i>, <i>Inconsistency</i>, <i>Relevance</i>. Below‑threshold → drop; else store with scores.</li>
+        <li><b>Storage & retrieval.</b> Embed surviving claims in vector DB (e.g., Pinecone). Retrieve via ANN + optional <i>semantic RRF</i> using module scores.</li>
+        <li><b>QA agent.</b> LangChain tool for retrieval; agent summarizes evidence into answers.</li>
+      </ol>
+    </div>
+    <p><b>Baselines.</b> (A) Vanilla RAG (no pre‑filter). (B) RAG + LLM re‑rank/filters (zero‑/few‑shot). (C) Optional: post‑filter RRF only.</p>
+    <p><b>Novelty.</b> We evaluate ingestion‑time, claim‑level filtering in an informal‑communications domain where appropriate and non‑appropriate content co‑exist within messages, and run end‑to‑end ablations to quantify compounding effects.</p>
+    <hr />
+
+    <h2 id="data">Data</h2>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email‑level). For claim‑level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank‑QA‑Summary) into non‑professional ENRON emails, yielding mixed‑context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> Benchmark against Claimify‑style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <hr />
+
+    <h2 id="results">Preliminary Results & Evaluation</h2>
+    <p><b>Two tracks.</b> (1) <i>Overall performance:</i> ablation from Vanilla → +Relevance → +Tone/Sarcasm → +Privacy/PII → … measuring QA EM/F1, faithfulness, refusal on sensitive prompts, and PII‑leak rate. (2) <i>Module performance:</i> classifier accuracy vs. GPT‑4/5 zero‑ and few‑shot prompts; optional prompt‑optimization with DSPy.</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:center"><strong>Setting</strong></th>
+          <th style="text-align:center">QA EM / F1</th>
+          <th style="text-align:center">Faithfulness↑</th>
+          <th style="text-align:center">PII Leak↓</th>
+          <th style="text-align:center">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center"><strong>Vanilla RAG</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">No filtering</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><strong>Pre‑filtered RAG (ours)</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Claim‑level MoE</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><strong>LLM‑filtered RAG</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Zero/few‑shot prompts</td>
+        </tr>
+      </tbody>
+      <caption>Table 1. Evaluation plan; populate with midterm preliminary numbers.</caption>
+    </table>
+    <div style="text-align:center;margin:18px 0 32px">
+      <img style="height:300px" alt="Placeholder results figure" src="./files/results.png" />
+    </div>
+    <hr />
+
+    <h2 id="plan">Plan & Risks</h2>
+    <ul>
+      <li><b>Week 1–2:</b> Fine‑tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
+      <li><b>Week 3:</b> Run Vanilla vs. Pre‑filtered vs. LLM‑filtered comparisons on held‑out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
+      <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
+    </ul>
+    <p><b>Risks.</b> Email‑level labels → create synthetic claim‑level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata.</p>
+    <hr />
+
+    <h2 id="conclusion">Conclusion & Future Work</h2>
+    <p>We introduce ingestion‑time appropriateness filtering for corporate RAG: claim‑level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
+    <hr />
+
+    <h2 id="rubric-map">Rubric Mapping (Midterm)</h2>
+    <ul>
+      <li><b>(1 pt) Idea development:</b> defined claim‑level MoE filters; concrete eval plan.</li>
+      <li><b>(1 pt) Project webpage:</b> this page (code/links above).</li>
+      <li><b>(2 pts) Preliminary results vs. baselines:</b> table scaffold + metrics; populate with numbers post‑office hour.</li>
+      <li><b>(1 pt) Plan to address feedback:</b> see Mentor Feedback Plan below.</li>
+    </ul>
+
+    <h3 id="mentor-plan">Mentor Feedback Plan</h3>
+    <ol>
+      <li>Threshold calibration strategy (optimize P@R vs. AUROC?)</li>
+      <li>Claim splitting robustness and evaluation</li>
+      <li>Privacy/PII detection scope (names, emails, IDs, locations)</li>
+      <li>RAG metrics selection and test design</li>
+      <li>Ablations to prove pre‑filter value vs. re‑rank only</li>
+    </ol>
+
+    <!-- =====================
+      OFFICE HOUR PACK (for internal use; not needed on public site if undesired)
+      Copy/paste the following into your notes/Canvas submission.
+    ======================= -->
+    <!--
+    === Office Hour Agenda (15–20 min) ===
+    1) 60s project recap (problem, method, data, novelty)
+    2) 5 min demo: ingestion → claim split → filter scores → Claim DB → RAG chat
+    3) 5 min results so far: show Table 1 scaffold; discuss metrics; show 2–3 qualitative examples
+    4) 5–8 min mentor Q&A on risks/next steps
+
+    === Questions for Mentor ===
+    • Are our appropriateness heads and labels sufficient? What would you add/remove?
+    • Preferred operating point for filters (high precision vs balanced)?
+    • Best practice to evaluate sarcasm’s downstream harm to QA?
+    • Privacy evaluation: what PII set & redaction policy would you expect?
+    • Which ablations are most convincing for the midterm/final?
+
+    === Canvas Midterm Write‑up Template ===
+    1) Intermediate Progress (since proposal):
+       – Implemented ingestion + claim splitting; trained initial relevance/tone/privacy heads; built evaluation harness; webpage live.
+    2) Preliminary Results vs Baseline:
+       – Baseline: vanilla RAG on unfiltered Enron subset.
+       – Ours: pre‑filtered RAG w/ MoE thresholds. (Report EM/F1, faithfulness, PII leak.)
+       – Include 1 figure + Table 1 with numbers.
+    3) Mentor Feedback (bullets):
+       – [Fill after meeting]
+    4) Plan to Address Feedback & Path to Final:
+       – Threshold calibration, data augmentation, ablations schedule, risk mitigations.
+    5) Links:
+       – Webpage, code repo, model weights (if any), slides (if any).
+    -->
+
+  </div>
+</body>
+</html>
