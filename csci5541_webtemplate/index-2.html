@@ -31,6 +31,8 @@
     <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
     <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
 
+    <p class="tagline">Reducing "rubbish in, rubbish out" for enterprise RAG by <em>pre-embedding filtering</em> of claim-level content from informal communications (email/Slack).</p>
+
     <div class="authors-wrapper">
       <div class="author-container">
         <div class="author-image"><img src="./files/Alex_B.png" alt="A. Berg" /></div>
@@ -86,10 +88,10 @@
     <div class="callout">
       <ol>
         <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from XLSX in Google Drive). Parse message text, headers, thread context.</li>
-        <li><b>Claim decomposition.</b> Planned (scaffold only) — atomic statement splitting prior to filtering.</li>
-        <li><b>MoE filtering.</b> Planned — fine‑tuned RoBERTa‑large heads (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold → drop; else store with scores.</li>
-        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking logic stubbed.</li>
-        <li><b>QA agent.</b> LangChain + LangGraph tool (<code>lookup_in_rag</code>) wired to an OpenAI chat model (<code>gpt-5-mini</code>). DSPy configured for prompt experiments.</li>
+        <li><b>Claim decomposition.</b> <i>Claimify</i> module (see below) splits messages into atomic claims; ambiguous spans preserved with context.</li>
+        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7‑step CoT + 2‑step ReAct classifier.ipynb”</b> implementing per‑claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa‑large heads are planned; LLM classifiers are the present default.</li>
+        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy configured for prompt experiments.</li>
       </ol>
     </div>
     <p><b>Baselines.</b> (A) Vanilla RAG (no pre‑filter). (B) RAG + LLM re‑rank/filters (zero‑/few‑shot). (C) Optional: post‑filter RRF only.</p>
@@ -116,6 +118,16 @@
     </div>
     <hr />
 
+    <h2 id="claimify">Sunder’s Claimify Module</h2>
+    <p><b>Owner:</b> S. Subramanian. <b>Notebook:</b> <i>Claim 7‑step CoT + 2‑step ReAct classifier.ipynb</i> (to be merged into main).</p>
+    <ul>
+      <li><b>Goal:</b> Robust claim segmentation + per‑claim gating before embedding.</li>
+      <li><b>Flow:</b> (1) sentence spans → (2) minimal‑claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
+      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re‑weighting.</li>
+      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
+    </ul>
+
+    <hr />
     <h2 id="data">Data</h2>
     <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email‑level). For claim‑level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank‑QA‑Summary) into non‑professional ENRON emails, yielding mixed‑context messages with groundable QA.</p>
     <p><b>Claim extraction eval.</b> Benchmark against Claimify‑style datasets to ensure accurate splitting independent of LLM prompting.</p>
@@ -123,56 +135,142 @@
 
     <h2 id="results">Preliminary Results & Evaluation</h2>
     <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
-    <p><b>Two tracks.</b> (1) <i>Overall performance:</i> ablation from Vanilla → +Relevance → +Tone/Sarcasm → +Privacy/PII → … measuring QA EM/F1, faithfulness, refusal on sensitive prompts, and PII‑leak rate. (2) <i>Module performance:</i> classifier accuracy vs. GPT‑4/5 zero‑ and few‑shot prompts; optional prompt‑optimization with DSPy.</p>
-    <table>
+    <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre‑filtering. We drop ROUGE‑L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
+
+    <h3>Classifier Metrics (per‑head, claim level)</h3>
+    <table class="table is-fullwidth is-striped">
       <thead>
         <tr>
-          <th style="text-align:center"><strong>Setting</strong></th>
-          <th style="text-align:center">QA EM / F1</th>
-          <th style="text-align:center">Faithfulness↑</th>
-          <th style="text-align:center">PII Leak↓</th>
+          <th style="text-align:center">Classifier (current)</th>
+          <th style="text-align:center">Source</th>
+          <th style="text-align:center">Accept Acc↑</th>
+          <th style="text-align:center">Reject Acc↑</th>
+          <th style="text-align:center">Balanced Acc↑</th>
+          <th style="text-align:center">Precision<sub>accept</sub>↑</th>
+          <th style="text-align:center">Precision<sub>reject</sub>↑</th>
+          <th style="text-align:center">AUPRC / ROC‑AUC↑</th>
           <th style="text-align:center">Notes</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td style="text-align:center"><strong>Vanilla RAG</strong></td>
+          <td style="text-align:center"><b>Relevance</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Finetune planned (RoBERTa‑large)</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>PII / Confidentiality</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Redaction candidates emitted</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Tone / Sarcasm</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Down‑rank if ambiguous</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Toxicity</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Gate hard above threshold</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Speculation / Opinion</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Store w/ flag vs. drop</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Inconsistency</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Cross‑claim check (planned)</td>
+        </tr>
+      </tbody>
+      <caption>Table A. Per‑classifier gating metrics focused on <i>accept/reject</i> behavior.</caption>
+    </table>
+
+    <h3>Retrieval/QA Metrics (system level)</h3>
+    <table class="table is-fullwidth is-striped">
+      <thead>
+        <tr>
+          <th style="text-align:center">Setting</th>
+          <th style="text-align:center">nDCG@10↑</th>
+          <th style="text-align:center">P@10↑</th>
+          <th style="text-align:center">PII Leak↓</th>
+          <th style="text-align:center">Faithfulness↑</th>
+          <th style="text-align:center">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center"><b>Vanilla RAG</b></td>
+          <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">No filtering</td>
         </tr>
         <tr>
-          <td style="text-align:center"><strong>Pre‑filtered RAG (ours)</strong></td>
+          <td style="text-align:center"><b>Pre‑filtered RAG (ours)</b></td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Claim‑level MoE</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Claim‑level MoE; metadata re‑weighting</td>
         </tr>
         <tr>
-          <td style="text-align:center"><strong>LLM‑filtered RAG</strong></td>
+          <td style="text-align:center"><b>LLM‑filtered RAG</b></td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Zero/few‑shot prompts</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Zero/few‑shot filters</td>
         </tr>
       </tbody>
-      <caption>Table 1. Evaluation plan; populate with midterm preliminary numbers.</caption>
+      <caption>Table B. Retrieval/QA metrics (no ROUGE‑L); populate with midterm numbers.</caption>
     </table>
-    <div style="text-align:center;margin:18px 0 32px">
-      <img style="height:300px" alt="Placeholder results figure" src="./files/results.png" />
-    </div>
+
     <p class="note"><b>Status (midterm):</b></p>
     <ul>
-      <li>✅ API setup (OpenAI, Pinecone), index creation, and 3072‑d embedding flow working.</li>
-      <li>✅ Google Drive XLSX import populates <code>example_claims_df</code>, <code>enron_*_df</code>, and <code>gmail_*_df</code>.</li>
-      <li>✅ Gmail IMAP ingestion functioning; rows appended to <code>gmail_msgs_df</code>.</li>
-      <li>✅ LangGraph chatbot + retrieval tool wired; Gradio demo online (local auth).</li>
-      <li>🟨 Claim splitter scaffolded (not yet enforcing atomicity in pipeline).</li>
-      <li>🟨 MoE classifier heads planned; thresholds/metadata schema drafted.</li>
-      <li>🟨 Retrieval scoring uses placeholder RNG; will replace with semantic RRF + filter‑aware boosts.</li>
-      <li>⚠️ Engineering note: a legacy helper defines a 768‑dim Pinecone path; unify on 3072 to match <code>text-embedding-3-large</code>.</li>
-      <li>⚠️ Engineering note: Gemini scratch helper is inactive; keep gated or remove.</li>
+      <li>✅ APIs + index + 3072‑d embeddings in place; retrieval tool wired into LangGraph agent.</li>
+      <li>✅ XLSX/ENRON + Gmail IMAP ingest working.</li>
+      <li>🟨 Claimify (LLM CoT+ReAct) active as default classifiers; moving into main file.</li>
+      <li>🟨 RRF and filter‑aware boosts to replace placeholder RNG.</li>
+      <li>⚠️ Unify any 768‑dim vestiges; keep Gemini helper gated/removed.</li>
     </ul>
     <hr />
 
