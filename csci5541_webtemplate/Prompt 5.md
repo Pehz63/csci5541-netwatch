@@ -1,3 +1,25 @@
+Integrate this feedback into the code I will give after.
+
+1)    Qualitative results seen from initial testing:
+    o    Claims –  Overall we see… [Sunder to complete]
+    o    Filters –   Overall, we have seen that the Confidentially filter tends to be the most sensitive of the filters based on our spot testing to data. In particular, the LLM seems easily confused by mention of the word’s private / confidential – even if they are refereeing to a separate document (for example – an email publicizing a new “confidentiality Policy” is not itself confidential). Conversely , with the Toxicity filter, which good at generally picking up toxicity in its COT, seems generally to underrate the significance of misogyny and other more “casual” toxic issues.
+
+2)    Wording tweaks/corrections:
+    
++ ENRON emails (from the Berkely annotated archive - https://bailando.berkeley.edu/enron_email.html)"
+A claim creation, decomposition and [x] module – adapted from the Microsoft Claimify paper’s methodology (here)
+Implementation Snapshot:
+•    Technologies: Overall, our system is implemented in Python using Google Colab. 
+  o    LLM: For the LLM model we access OpenAI’s “GPT-5-mini” model via the API. For more complex query structuring we use DSPy. 
+  o    Vector database:  We use Pinecone (hosted on (AWS us east 1), orchestrated via LangGraph tool cools.
+  o    Embeddings: We use OpenAI’s "text-embedding-3-large" with EMBED_DIMS = 3072.
+  o    Data I/O: For storing information between sessions we save email and claim data frames into Google Drive (via XLSX).
+Remove “Engineering notes”.
+
+
+Here is the code, integrate the above feedback into this code:
+
+```html
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
@@ -19,7 +41,6 @@
     .author-image img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#eee}
     .taglist{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
     .kbd{background:#f5f5f5;border:1px solid #ddd;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:monospace}
-    .sys-img.teaser img{width:auto;max-height:420px;display:block;margin:0 auto}
     table{margin:0 auto}
     caption{caption-side:bottom;padding-top:8px}
     .note{font-size:.95rem;color:#444}
@@ -75,77 +96,70 @@
 
     <h2 id="abstract">Abstract</h2>
     <p>
-      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below-threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+      Retrieval‑Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre‑embedding filtering</b> framework that decomposes messages into claim‑level units and scores each with a modular MoE of fine‑tuned RoBERTa‑large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre‑filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM‑prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
     </p>
-    <hr />
-
-    <h2 id="teaser">Teaser Figure</h2>
-    <p>High-level NetWatch flow: ingestion → claim extraction → modular filtering → embedding/storage → retrieval &amp; QA.</p>
-    <p class="sys-img teaser">
-      <img src="./files/prj diagram.png" alt="Project pipeline diagram" />
-    </p>
-    <h3 id="teaser-notes">Notes</h3>
-    <p class="note">Classifier scores are stored as metadata for retrieval-time re-weighting, allowing ambiguous claims to be down-ranked instead of hard-dropped.</p>
     <hr />
 
     <h2 id="introduction">Introduction / Background / Motivation</h2>
     <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
-    <p><b>Gap.</b> Prior work emphasizes post-retrieval tricks (graph fusion, RRF); little evaluates <i>source-level</i> filtering before embedding when full context (headers/threads) is available.</p>
-    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post-hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
+    <p><b>Gap.</b> Prior work emphasizes post‑retrieval tricks (graph fusion, RRF); little evaluates <i>source‑level</i> filtering before embedding when full context (headers/threads) is available.</p>
+    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post‑hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
     <hr />
 
     <h2 id="approach">Approach</h2>
     <div class="callout">
       <ol>
-        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Parse message text, headers, thread context.</li>
-        <li><b>Claim decomposition.</b> A claim creation, decomposition, and verification module—adapted from Microsoft’s “Claimify” methodology—splits messages into atomic claims; ambiguous spans preserved with context.</li>
-        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7-step CoT + 2-step ReAct classifier.ipynb”</b> implementing per-claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa-large heads are planned; LLM classifiers are the present default.</li>
+        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from XLSX in Google Drive). Parse message text, headers, thread context.</li>
+        <li><b>Claim decomposition.</b> <i>Claimify</i> module (see below) splits messages into atomic claims; ambiguous spans preserved with context.</li>
+        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7‑step CoT + 2‑step ReAct classifier.ipynb”</b> implementing per‑claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa‑large heads are planned; LLM classifiers are the present default.</li>
         <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
-        <li><b>QA agent.</b> LangChain + LangGraph tool calls (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy is used for more complex prompt/program structuring.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy configured for prompt experiments.</li>
       </ol>
     </div>
-    <p><b>Baselines.</b> (A) Vanilla RAG (no pre-filter). (B) RAG + LLM re-rank/filters (zero-/few-shot). (C) Optional: post-filter RRF only.</p>
-    <p><b>Novelty.</b> We evaluate ingestion-time, claim-level filtering in an informal-communications domain where appropriate and non-appropriate content co-exist within messages, and run end-to-end ablations to quantify compounding effects.</p>
+    <p><b>Baselines.</b> (A) Vanilla RAG (no pre‑filter). (B) RAG + LLM re‑rank/filters (zero‑/few‑shot). (C) Optional: post‑filter RRF only.</p>
+    <p><b>Novelty.</b> We evaluate ingestion‑time, claim‑level filtering in an informal‑communications domain where appropriate and non‑appropriate content co‑exist within messages, and run end‑to‑end ablations to quantify compounding effects.</p>
 
-    <h3 id="impl">Implementation Snapshot</h3>
+    <h3 id="impl">Implementation Snapshot (from current Colab)</h3>
     <ul>
-      <li><b>Technologies:</b> Implemented in Python using Google Colab.</li>
-      <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
-      <li><b>Vector database:</b> Pinecone (hosted on AWS us-east-1), orchestrated via LangGraph tool calls.</li>
-      <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
-      <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
+      <li><b>APIs/Keys:</b> OpenAI + Pinecone pulled from Colab <code>userdata</code>; Google Drive mounted to <code>/content/drive</code>.</li>
+      <li><b>Embeddings:</b> <code>EMBED_MODEL = "text-embedding-3-large"</code> with <code>EMBED_DIMS = 3072</code>.</li>
+      <li><b>Index:</b> <code>index_name = "netwatch-claims"</code> (AWS us‑east‑1, cosine) created via <code>ServerlessSpec</code>.</li>
+      <li><b>LLMs:</b> LangChain <code>init_chat_model("gpt-5-mini")</code>; DSPy LM <code>openai/gpt-5-mini</code> (confirmation print ok). Gemini helper code is gated/inactive.</li>
+      <li><b>Data I/O:</b> XLSX workbook <code>claim_examples.xlsx</code> → DataFrames: <code>example_claims_df</code>, <code>examples_msg_df</code>, <code>enron_claims_df</code>, <code>enron_msgs_df</code>, <code>gmail_claims_df</code>, <code>gmail_msgs_df</code> with <code>msg_id</code> coerced to <code>Int64</code>.</li>
+      <li><b>Email ingest:</b> IMAP to <code>netwatch5541@gmail.com</code>; appends rows to <code>gmail_msgs_df</code>.</li>
+      <li><b>Build DB:</b> <code>build_db()</code> indexes a test claim; pre‑filter hooks TODO (sarcasm/privacy/etc.).</li>
+      <li><b>Retrieval:</b> <code>db_lookup()</code> and tool <code>lookup_in_rag</code> (semantic RRF placeholder).</li>
+      <li><b>Agent/UI:</b> LangGraph state graph with tool calling; Gradio <code>ChatInterface</code> titled “Netwatch Final Project”.</li>
     </ul>
-
+    <div class="callout"><b>Engineering notes:</b>
+      <ul>
+        <li>Unify any legacy 768‑dim code paths to 3072 to match <code>text-embedding-3-large</code>.</li>
+        <li>Fix minor bug in <code>lookup_in_rag</code>: inside the neighbor loop, replace <code>scores[nb["id"]]</code> with <code>scores[neighbor["id"]]</code>.</li>
+        <li>Consider removing or guarding the Gemini scratch block to avoid accidental execution.</li>
+      </ul>
+    </div>
     <hr />
 
     <h2 id="claimify">Sunder’s Claimify Module</h2>
-    <p><b>Owner:</b> S. Subramanian. <b>Notebook:</b> <i>Claim 7-step CoT + 2-step ReAct classifier.ipynb</i> (to be merged into main).</p>
+    <p><b>Owner:</b> S. Subramanian. <b>Notebook:</b> <i>Claim 7‑step CoT + 2‑step ReAct classifier.ipynb</i> (to be merged into main).</p>
     <ul>
-      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
-      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
-      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
+      <li><b>Goal:</b> Robust claim segmentation + per‑claim gating before embedding.</li>
+      <li><b>Flow:</b> (1) sentence spans → (2) minimal‑claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
+      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re‑weighting.</li>
       <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
     </ul>
 
     <hr />
     <h2 id="data">Data</h2>
-    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
-    <p><b>Claim extraction eval.</b> Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email‑level). For claim‑level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank‑QA‑Summary) into non‑professional ENRON emails, yielding mixed‑context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> Benchmark against Claimify‑style datasets to ensure accurate splitting independent of LLM prompting.</p>
     <hr />
 
     <h2 id="results">Preliminary Results & Evaluation</h2>
-
-    <!-- Qualitative results from initial testing (added) -->
-    <h3>Qualitative results (initial testing)</h3>
-    <ul>
-      <li><b>Claims:</b> Overall we see… <i>[Sunder to complete]</i></li>
-      <li><b>Filters:</b> The <i>Confidentiality</i> filter appears most sensitive in spot-checks—LLM tends to over-flag mentions of “private/confidential” even when referring to a separate document (e.g., an email announcing a new “Confidentiality Policy” isn’t itself confidential). Conversely, the <i>Toxicity</i> filter generally detects toxic CoT but underrates misogyny and other “casual” toxic language.</li>
-    </ul>
-
     <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
-    <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre-filtering. We drop ROUGE-L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
+    <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre‑filtering. We drop ROUGE‑L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
 
-    <h3>Classifier Metrics (per-head, claim level)</h3>
+    <h3>Classifier Metrics (per‑head, claim level)</h3>
     <table class="table is-fullwidth is-striped">
       <thead>
         <tr>
@@ -156,7 +170,7 @@
           <th style="text-align:center">Balanced Acc↑</th>
           <th style="text-align:center">Precision<sub>accept</sub>↑</th>
           <th style="text-align:center">Precision<sub>reject</sub>↑</th>
-          <th style="text-align:center">AUPRC / ROC-AUC↑</th>
+          <th style="text-align:center">AUPRC / ROC‑AUC↑</th>
           <th style="text-align:center">Notes</th>
         </tr>
       </thead>
@@ -170,7 +184,7 @@
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Finetune planned (RoBERTa-large)</td>
+          <td style="text-align:center">Finetune planned (RoBERTa‑large)</td>
         </tr>
         <tr>
           <td style="text-align:center"><b>PII / Confidentiality</b></td>
@@ -192,7 +206,7 @@
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Down-rank if ambiguous</td>
+          <td style="text-align:center">Down‑rank if ambiguous</td>
         </tr>
         <tr>
           <td style="text-align:center"><b>Toxicity</b></td>
@@ -225,10 +239,10 @@
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Cross-claim check (planned)</td>
+          <td style="text-align:center">Cross‑claim check (planned)</td>
         </tr>
       </tbody>
-      <caption>Table A. Per-classifier gating metrics focused on <i>accept/reject</i> behavior.</caption>
+      <caption>Table A. Per‑classifier gating metrics focused on <i>accept/reject</i> behavior.</caption>
     </table>
 
     <h3>Retrieval/QA Metrics (system level)</h3>
@@ -253,47 +267,49 @@
           <td style="text-align:center">No filtering</td>
         </tr>
         <tr>
-          <td style="text-align:center"><b>Pre-filtered RAG (ours)</b></td>
+          <td style="text-align:center"><b>Pre‑filtered RAG (ours)</b></td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Claim-level MoE; metadata re-weighting</td>
+          <td style="text-align:center">Claim‑level MoE; metadata re‑weighting</td>
         </tr>
         <tr>
-          <td style="text-align:center"><b>LLM-filtered RAG</b></td>
+          <td style="text-align:center"><b>LLM‑filtered RAG</b></td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
           <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Zero/few-shot filters</td>
+          <td style="text-align:center">Zero/few‑shot filters</td>
         </tr>
       </tbody>
-      <caption>Table B. Retrieval/QA metrics (no ROUGE-L); populate with midterm numbers.</caption>
+      <caption>Table B. Retrieval/QA metrics (no ROUGE‑L); populate with midterm numbers.</caption>
     </table>
 
     <p class="note"><b>Status (midterm):</b></p>
     <ul>
-      <li>✅ APIs + index + 3072-d embeddings in place; retrieval tool wired into LangGraph agent.</li>
+      <li>✅ APIs + index + 3072‑d embeddings in place; retrieval tool wired into LangGraph agent.</li>
       <li>✅ XLSX/ENRON + Gmail IMAP ingest working.</li>
       <li>🟨 Claimify (LLM CoT+ReAct) active as default classifiers; moving into main file.</li>
-      <li>🟨 RRF and filter-aware boosts to replace placeholder RNG.</li>
-      <li>⚠️ Unify any 768-dim vestiges; keep Gemini helper gated/removed.</li>
+      <li>🟨 RRF and filter‑aware boosts to replace placeholder RNG.</li>
+      <li>⚠️ Unify any 768‑dim vestiges; keep Gemini helper gated/removed.</li>
     </ul>
     <hr />
 
     <h2 id="plan">Plan & Risks</h2>
     <ul>
-      <li><b>Week 1–2:</b> Fine-tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
-      <li><b>Week 3:</b> Run Vanilla vs. Pre-filtered vs. LLM-filtered comparisons on held-out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
+      <li><b>Week 1–2:</b> Fine‑tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
+      <li><b>Week 3:</b> Run Vanilla vs. Pre‑filtered vs. LLM‑filtered comparisons on held‑out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
       <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
     </ul>
-    <p><b>Risks.</b> Email-level labels → create synthetic claim-level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
+    <p><b>Risks.</b> Email‑level labels → create synthetic claim‑level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
     <hr />
 
     <h2 id="conclusion">Conclusion & Future Work</h2>
-    <p>We introduce ingestion-time appropriateness filtering for corporate RAG: claim-level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
+    <p>We introduce ingestion‑time appropriateness filtering for corporate RAG: claim‑level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
     <hr />
   </div>
 </body>
 </html>
+
+```
