@@ -12,217 +12,182 @@
   <link href="./files/css" rel="stylesheet" />
   <base href="." target="_blank" />
   <style>
-    .wrapper { max-width: 980px; margin: 0 auto; padding: 24px; }
-    .authors-wrapper { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-    .author-container { display: flex; flex-direction: column; align-items: center; width: 180px; }
-    .author-image img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; background: #f2f2f2; border: 1px solid #ddd; }
-    .publication-links { display: flex; gap: 12px; flex-wrap: wrap; }
-    .sys-img { text-align: center; }
-    .sys-img img { max-width: 100%; height: auto; }
-    .tagline { color: #666; font-size: 0.95rem; }
-    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 6px; }
-    .kpi .box { padding: 12px; }
-    .table caption { caption-side: bottom; padding-top: 6px; color: #666; font-size: 0.9rem; }
-    .note { font-size: 0.9rem; color: #666; }
-    .section-spacer { height: 16px; }
+    .wrapper{max-width:980px;margin:0 auto;padding:24px}
+    .sys-img img{width:100%;height:auto}
+    .authors-wrapper{display:flex;gap:18px;flex-wrap:wrap}
+    .author-container{display:flex;flex-direction:column;align-items:center}
+    .author-image img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#eee}
+    .taglist{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+    .kbd{background:#f5f5f5;border:1px solid #ddd;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:monospace}
+    table{margin:0 auto}
+    caption{caption-side:bottom;padding-top:8px}
+    .note{font-size:.95rem;color:#444}
+    .callout{background:#f7fbff;border:1px solid #cfe8ff;border-radius:10px;padding:12px}
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <h1 style="font-family: 'Lato', sans-serif;">Appropriateness Filtering for Corporate RAG Database Storage</h1>
-    <h4 style="font-family: 'Lato', sans-serif;">Fall 2025 CSCI 5541 NLP: Class Project — University of Minnesota</h4>
-    <h4 style="font-family: 'Lato', sans-serif;">Team NetWatch</h4>
-
-    <p class="tagline">Reducing "rubbish in, rubbish out" for enterprise RAG by <em>pre-embedding filtering</em> of claim-level content from informal communications (email/Slack).</p>
+    <h1 style="font-family:'Lato',sans-serif;">Appropriateness Filtering for Corporate RAG Database Storage</h1>
+    <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
+    <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
 
     <div class="authors-wrapper">
       <div class="author-container">
         <div class="author-image"><img src="./files/Alex_B.png" alt="A. Berg" /></div>
-        <p><strong>A. Berg</strong><br/><small><a href="mailto:ber00221@umn.edu">ber00221@umn.edu</a></small></p>
+        <p><strong>Alex Berg</strong><br/><small><a href="mailto:ber00221@umn.edu">ber00221@umn.edu</a></small></p>
       </div>
       <div class="author-container">
         <div class="author-image"><img src="./files/Zeph_J.jpg" alt="Z. Johnson" /></div>
-        <p><strong>Z. Johnson</strong><br/><small><a href="mailto:joh15514@umn.edu">joh15514@umn.edu</a></small></p>
+        <p><strong>Zephaniah Johnson</strong><br/><small><a href="mailto:joh15514@umn.edu">joh15514@umn.edu</a></small></p>
       </div>
       <div class="author-container">
         <div class="author-image"><img src="./files/Alex_S.jpg" alt="A. Slinger" /></div>
-        <p><strong>A. Slinger</strong><br/><small><a href="mailto:sling031@umn.edu">sling031@umn.edu</a></small></p>
+        <p><strong>Alex Slinger</strong><br/><small><a href="mailto:sling031@umn.edu">sling031@umn.edu</a></small></p>
       </div>
       <div class="author-container">
         <div class="author-image"><img src="./files/Sunder_S.png" alt="S. Subramanian" /></div>
-        <p><strong>S. Subramanian</strong><br/><small><a href="mailto:subra287@umn.edu">subra287@umn.edu</a></small></p>
+        <p><strong>Sunder Subramanian</strong><br/><small><a href="mailto:subra287@umn.edu">subra287@umn.edu</a></small></p>
       </div>
     </div>
 
-    <div class="section-spacer"></div>
+    <br />
 
     <div class="authors-wrapper">
       <div class="publication-links">
         <span class="link-block">
-          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined">Final Report (PDF)</a>
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Final Report</span></a>
         </span>
         <span class="link-block">
-          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined">Code (GitHub)</a>
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code</span></a>
         </span>
         <span class="link-block">
-          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined">Model Weights</a>
-        </span>
-        <span class="link-block">
-          <a href="https://github.com/minnesotanlp/csci5541-project-template" class="external-link button is-normal is-rounded is-dark is-outlined">Project Template</a>
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Model Weights</span></a>
         </span>
       </div>
     </div>
+  </div>
 
+  <div class="wrapper">
     <hr />
 
     <h2 id="abstract">Abstract</h2>
     <p>
-      Modern RAG systems inherit the quality of what they store. We target informal corporate communications (emails/Slack), where appropriate and inappropriate content co‑occur, and propose <em>pre-embedding filtering</em> at the claim level using modular classifiers (e.g., PII, confidentiality, sarcasm, toxicity, speculation, relevance). Claims that pass are embedded into a vector DB with preserved metadata for retrieval re-weighting. Using a labeled Enron subset plus synthetic insertions for claim-level supervision, we compare <strong>vanilla RAG</strong> vs. <strong>pre-filtered RAG</strong>, and <strong>fine-tuned modules</strong> vs. <strong>LLM prompting</strong>. We hypothesize measurable gains in retrieval quality and safety while reducing storage of sensitive/low-value content.
+      Retrieval‑Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre‑embedding filtering</b> framework that decomposes messages into claim‑level units and scores each with a modular MoE of fine‑tuned RoBERTa‑large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre‑filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM‑prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
     </p>
-
-    <hr />
-
-    <h2 id="teaser">Teaser Figure</h2>
-    <p>High-level stages of the NetWatch pipeline: ingestion → claim extraction → modular filtering → embedding/storage → retrieval &amp; QA. The figure below is our current system diagram.</p>
-    <p class="sys-img"><img src="./files/prj diagram.png" alt="Project pipeline diagram" /></p>
-
-    <h3 id="teaser-notes">Notes</h3>
-    <p class="note">We retain classifier scores as metadata for retrieval-time re-weighting (not just hard filtering), letting ambiguous claims be down-ranked rather than dropped when appropriate.</p>
-
     <hr />
 
     <h2 id="introduction">Introduction / Background / Motivation</h2>
-    <p>
-      Enterprise knowledge lives in unstructured channels where personal and professional content mix. Storing everything degrades QA quality and risks privacy leakage. Prior work largely optimizes <em>post-retrieval</em> ranking (e.g., graph/RRF). We shift left: filter at ingestion when full context (headers/threads) is available, converting messages to claims and classifying each for appropriateness and reliability before it ever reaches the RAG store.
-    </p>
-
+    <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
+    <p><b>Gap.</b> Prior work emphasizes post‑retrieval tricks (graph fusion, RRF); little evaluates <i>source‑level</i> filtering before embedding when full context (headers/threads) is available.</p>
+    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post‑hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
     <hr />
 
     <h2 id="approach">Approach</h2>
-    <p><strong>Pipeline:</strong> (1) Ingest emails (demo via Gmail API) and Enron corpus; (2) Segment into claims; (3) Score claims with modular classifiers; (4) Discard below-threshold claims; (5) Embed survivors to Pinecone; (6) Retrieve with ANN + optional RRF; (7) LLM answers with claim citations and metadata-aware re-weighting.</p>
-
-    <p><strong>Planned filter modules:</strong> Confidentiality, Personal info (PII), Sarcasm, Speculation/Opinion, Toxicity, Inconsistency, Relevance. Ambiguous cases are retained with scores for downstream ranking.</p>
-
-    <p><strong>Novelty:</strong> Pre-embedding filtering in informal corporate text; claim-level operation on message-internal mixtures; end-to-end ablations vs. prompted LLM scoring.</p>
-
-    <div class="kpi">
-      <div class="box">
-        <strong>Data</strong><br />
-        ~1,700 labeled Enron emails (topic/tone) + synthetic claim-level insertions from MeetingBank QA for supervision and evaluation.
-      </div>
-      <div class="box">
-        <strong>Infra</strong><br />
-        Colab + LangChain, Pinecone vector DB, fine-tuned RoBERTa-large modules; LLM prompting and DSPy for comparator baselines.
-      </div>
-      <div class="box">
-        <strong>Agent</strong><br />
-        Minimal RAG agent with chat terminal for QA over the filtered Claim DB.
-      </div>
+    <div class="callout">
+      <ol>
+        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from XLSX in Google Drive). Parse message text, headers, thread context.</li>
+        <li><b>Claim decomposition.</b> Planned (scaffold only) — atomic statement splitting prior to filtering.</li>
+        <li><b>MoE filtering.</b> Planned — fine‑tuned RoBERTa‑large heads (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold → drop; else store with scores.</li>
+        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking logic stubbed.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool (<code>lookup_in_rag</code>) wired to an OpenAI chat model (<code>gpt-5-mini</code>). DSPy configured for prompt experiments.</li>
+      </ol>
     </div>
+    <p><b>Baselines.</b> (A) Vanilla RAG (no pre‑filter). (B) RAG + LLM re‑rank/filters (zero‑/few‑shot). (C) Optional: post‑filter RRF only.</p>
+    <p><b>Novelty.</b> We evaluate ingestion‑time, claim‑level filtering in an informal‑communications domain where appropriate and non‑appropriate content co‑exist within messages, and run end‑to‑end ablations to quantify compounding effects.</p>
 
+    <h3 id="impl">Implementation Snapshot (from current Colab)</h3>
+    <ul>
+      <li><b>APIs/Keys:</b> OpenAI + Pinecone pulled from Colab <code>userdata</code>; Google Drive mounted to <code>/content/drive</code>.</li>
+      <li><b>Embeddings:</b> <code>EMBED_MODEL = "text-embedding-3-large"</code> with <code>EMBED_DIMS = 3072</code>.</li>
+      <li><b>Index:</b> <code>index_name = "netwatch-claims"</code> (AWS us‑east‑1, cosine) created via <code>ServerlessSpec</code>.</li>
+      <li><b>LLMs:</b> LangChain <code>init_chat_model("gpt-5-mini")</code>; DSPy LM <code>openai/gpt-5-mini</code> (confirmation print ok). Gemini helper code is gated/inactive.</li>
+      <li><b>Data I/O:</b> XLSX workbook <code>claim_examples.xlsx</code> → DataFrames: <code>example_claims_df</code>, <code>examples_msg_df</code>, <code>enron_claims_df</code>, <code>enron_msgs_df</code>, <code>gmail_claims_df</code>, <code>gmail_msgs_df</code> with <code>msg_id</code> coerced to <code>Int64</code>.</li>
+      <li><b>Email ingest:</b> IMAP to <code>netwatch5541@gmail.com</code>; appends rows to <code>gmail_msgs_df</code>.</li>
+      <li><b>Build DB:</b> <code>build_db()</code> indexes a test claim; pre‑filter hooks TODO (sarcasm/privacy/etc.).</li>
+      <li><b>Retrieval:</b> <code>db_lookup()</code> and tool <code>lookup_in_rag</code> (semantic RRF placeholder).</li>
+      <li><b>Agent/UI:</b> LangGraph state graph with tool calling; Gradio <code>ChatInterface</code> titled “Netwatch Final Project”.</li>
+    </ul>
+    <div class="callout"><b>Engineering notes:</b>
+      <ul>
+        <li>Unify any legacy 768‑dim code paths to 3072 to match <code>text-embedding-3-large</code>.</li>
+        <li>Fix minor bug in <code>lookup_in_rag</code>: inside the neighbor loop, replace <code>scores[nb["id"]]</code> with <code>scores[neighbor["id"]]</code>.</li>
+        <li>Consider removing or guarding the Gemini scratch block to avoid accidental execution.</li>
+      </ul>
+    </div>
     <hr />
 
-    <h2 id="results">Preliminary Results (WIP)</h2>
-    <p>
-      We will show vanilla vs. pre-filter deltas on retrieval (nDCG@5/10) and QA (ROUGE‑L / F1) using MeetingBank-seeded queries over Enron. We will also report filter precision/recall on a hand-checked subset and the % of claims removed.
-    </p>
+    <h2 id="data">Data</h2>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email‑level). For claim‑level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank‑QA‑Summary) into non‑professional ENRON emails, yielding mixed‑context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> Benchmark against Claimify‑style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <hr />
 
-    <table class="table is-striped is-fullwidth">
+    <h2 id="results">Preliminary Results & Evaluation</h2>
+    <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
+    <p><b>Two tracks.</b> (1) <i>Overall performance:</i> ablation from Vanilla → +Relevance → +Tone/Sarcasm → +Privacy/PII → … measuring QA EM/F1, faithfulness, refusal on sensitive prompts, and PII‑leak rate. (2) <i>Module performance:</i> classifier accuracy vs. GPT‑4/5 zero‑ and few‑shot prompts; optional prompt‑optimization with DSPy.</p>
+    <table>
       <thead>
         <tr>
           <th style="text-align:center"><strong>Setting</strong></th>
-          <th style="text-align:center">nDCG@10</th>
-          <th style="text-align:center">ROUGE‑L</th>
-          <th style="text-align:center">F1</th>
-          <th style="text-align:center">Claims Δ</th>
+          <th style="text-align:center">QA EM / F1</th>
+          <th style="text-align:center">Faithfulness↑</th>
+          <th style="text-align:center">PII Leak↓</th>
+          <th style="text-align:center">Notes</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td style="text-align:center">Vanilla RAG</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">0%</td>
+          <td style="text-align:center"><strong>Vanilla RAG</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">No filtering</td>
         </tr>
         <tr>
-          <td style="text-align:center">+ Sarcasm filter</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—%</td>
+          <td style="text-align:center"><strong>Pre‑filtered RAG (ours)</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Claim‑level MoE</td>
         </tr>
         <tr>
-          <td style="text-align:center">+ PII filter</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—</td>
-          <td style="text-align:center">—%</td>
+          <td style="text-align:center"><strong>LLM‑filtered RAG</strong></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Zero/few‑shot prompts</td>
         </tr>
       </tbody>
-      <caption>Table 1. Placeholder for midterm preliminary metrics; updated weekly.</caption>
+      <caption>Table 1. Evaluation plan; populate with midterm preliminary numbers.</caption>
     </table>
-
-    <div class="note">We will add a confusion matrix for at least one module (e.g., sarcasm) and a bar chart of metric deltas vs. filters.</div>
-
-    <hr />
-
-    <h2 id="evaluation">Evaluation Plan</h2>
+    <div style="text-align:center;margin:18px 0 32px">
+      <img style="height:300px" alt="Placeholder results figure" src="./files/results.png" />
+    </div>
+    <p class="note"><b>Status (midterm):</b></p>
     <ul>
-      <li><strong>Overall performance:</strong> Ablations from vanilla → +1 filter → +N filters with identical query set; report metric deltas and over‑filtering risk.</li>
-      <li><strong>Module performance:</strong> Fine-tuned RoBERTa‑large vs. LLM prompt (zero-/few-shot via DSPy) for claim-level accuracy.</li>
-      <li><strong>Safety & privacy:</strong> PII/confidentiality detection effectiveness; storage reduction of sensitive/low-value content.</li>
+      <li>✅ API setup (OpenAI, Pinecone), index creation, and 3072‑d embedding flow working.</li>
+      <li>✅ Google Drive XLSX import populates <code>example_claims_df</code>, <code>enron_*_df</code>, and <code>gmail_*_df</code>.</li>
+      <li>✅ Gmail IMAP ingestion functioning; rows appended to <code>gmail_msgs_df</code>.</li>
+      <li>✅ LangGraph chatbot + retrieval tool wired; Gradio demo online (local auth).</li>
+      <li>🟨 Claim splitter scaffolded (not yet enforcing atomicity in pipeline).</li>
+      <li>🟨 MoE classifier heads planned; thresholds/metadata schema drafted.</li>
+      <li>🟨 Retrieval scoring uses placeholder RNG; will replace with semantic RRF + filter‑aware boosts.</li>
+      <li>⚠️ Engineering note: a legacy helper defines a 768‑dim Pinecone path; unify on 3072 to match <code>text-embedding-3-large</code>.</li>
+      <li>⚠️ Engineering note: Gemini scratch helper is inactive; keep gated or remove.</li>
     </ul>
-
     <hr />
 
-    <h2 id="questions">Mentor Questions (Office Hour)</h2>
+    <h2 id="plan">Plan & Risks</h2>
     <ul>
-      <li>Preferred claim granularity for evaluation and storage?</li>
-      <li>Thresholding vs. metadata re-weighting trade-offs (discard vs. down-rank)?</li>
-      <li>Minimum evaluation size for statistically meaningful deltas?</li>
-      <li>Privacy boundaries and PII heuristics for this course setting?</li>
-      <li>Priority: layered LLM ablation if fine-tuning time runs short?</li>
+      <li><b>Week 1–2:</b> Fine‑tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
+      <li><b>Week 3:</b> Run Vanilla vs. Pre‑filtered vs. LLM‑filtered comparisons on held‑out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
+      <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
     </ul>
-
+    <p><b>Risks.</b> Email‑level labels → create synthetic claim‑level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
     <hr />
 
-    <h2 id="timeline">Milestones to Final</h2>
-    <ul>
-      <li><strong>Week T+1:</strong> Finalize claim splitter; implement PII + sarcasm filters; populate metrics table.</li>
-      <li><strong>Week T+2:</strong> Add RRF + metadata re-weighting; expand evaluation set.</li>
-      <li><strong>Week T+3:</strong> Full ablation + LLM-prompted comparator; error analysis.</li>
-      <li><strong>Week T+4:</strong> Paper + final site polish; reproducibility notes; risk/limitations.
-    </li></ul>
-
+    <h2 id="conclusion">Conclusion & Future Work</h2>
+    <p>We introduce ingestion‑time appropriateness filtering for corporate RAG: claim‑level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
     <hr />
-
-    <h2 id="roles">Team Roles</h2>
-    <table class="table is-fullwidth is-striped">
-      <thead>
-        <tr>
-          <th>Member</th>
-          <th>Area of Focus</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>A. Berg</td><td>Vanilla + RRF RAG • LangChain flow • Gmail API</td></tr>
-        <tr><td>Zephaniah T. Johnson</td><td>Module development • Module vs. LLM testing</td></tr>
-        <tr><td>A. Slinger</td><td>Dataset development • DSPy prompt optimization</td></tr>
-        <tr><td>S. Subramanian</td><td>Module development • Ablation testing</td></tr>
-      </tbody>
-    </table>
-
-    <hr />
-
-    <h2 id="conclusion">Conclusion and Future Work</h2>
-    <p>
-      We expect claim-level pre-embedding filtering to improve retrieval quality and reduce sensitive or low-value storage. Next steps include expanded modules (inconsistency, relevance), stronger statistical evaluation, and comparisons against semantic RRF-only (post-filter) systems. We will document risks (privacy, over-filtering) and provide reproducibility artifacts (code, config, seeds).
-    </p>
-
-    <hr />
-
-    <p class="note">Contact: ber00221@umn.edu • joh15514@umn.edu • sling031@umn.edu • subra287@umn.edu</p>
   </div>
 </body>
 </html>

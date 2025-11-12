@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <br/>
+    <br />
 
     <div class="authors-wrapper">
       <div class="publication-links">
@@ -71,17 +71,9 @@
     <hr />
 
     <h2 id="abstract">Abstract</h2>
-
     <p>
       Retrieval‑Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre‑embedding filtering</b> framework that decomposes messages into claim‑level units and scores each with a modular MoE of fine‑tuned RoBERTa‑large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre‑filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM‑prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
     </p>
-
-    <hr />
-
-    <h2 id="teaser">Teaser Figure</h2>
-    <p class="note">High‑level dataflow: ingestion → claim splitting → MoE appropriateness filters → Claim DB → RAG/Q&amp;A chat. The pre‑filter aims to reduce "rubbish in, rubbish out."</p>
-    <p class="sys-img"><img src="./files/prj diagram.png" alt="Project diagram showing modular pre‑filter before RAG" /></p>
-
     <hr />
 
     <h2 id="introduction">Introduction / Background / Motivation</h2>
@@ -93,15 +85,28 @@
     <h2 id="approach">Approach</h2>
     <div class="callout">
       <ol>
-        <li><b>Ingestion.</b> Gmail API (demo) + ENRON emails. Parse message text, headers, and thread context.</li>
-        <li><b>Claim decomposition.</b> Split into atomic statements suitable for classification and retrieval.</li>
-        <li><b>MoE filtering.</b> Fine‑tuned RoBERTa‑large heads score: <i>Confidentiality/PII</i>, <i>Personal info</i>, <i>Sarcasm</i>, <i>Speculation/Opinion</i>, <i>Toxicity</i>, <i>Inconsistency</i>, <i>Relevance</i>. Below‑threshold → drop; else store with scores.</li>
-        <li><b>Storage & retrieval.</b> Embed surviving claims in vector DB (e.g., Pinecone). Retrieve via ANN + optional <i>semantic RRF</i> using module scores.</li>
-        <li><b>QA agent.</b> LangChain tool for retrieval; agent summarizes evidence into answers.</li>
+        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from XLSX in Google Drive). Parse message text, headers, thread context.</li>
+        <li><b>Claim decomposition.</b> Planned (scaffold only) — atomic statement splitting prior to filtering.</li>
+        <li><b>MoE filtering.</b> Planned — fine‑tuned RoBERTa‑large heads (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below‑threshold → drop; else store with scores.</li>
+        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking logic stubbed.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool (<code>lookup_in_rag</code>) wired to an OpenAI chat model (<code>gpt-5-mini</code>). DSPy configured for prompt experiments.</li>
       </ol>
     </div>
     <p><b>Baselines.</b> (A) Vanilla RAG (no pre‑filter). (B) RAG + LLM re‑rank/filters (zero‑/few‑shot). (C) Optional: post‑filter RRF only.</p>
     <p><b>Novelty.</b> We evaluate ingestion‑time, claim‑level filtering in an informal‑communications domain where appropriate and non‑appropriate content co‑exist within messages, and run end‑to‑end ablations to quantify compounding effects.</p>
+
+    <h3 id="impl">Implementation Snapshot (from current Colab)</h3>
+    <ul>
+      <li><b>APIs/Keys:</b> OpenAI + Pinecone pulled from Colab <code>userdata</code>.</li>
+      <li><b>Embeddings:</b> <code>text-embedding-3-large</code> (3072‑d).</li>
+      <li><b>Index:</b> <code>netwatch-claims</code> (AWS us‑east‑1, cosine).</li>
+      <li><b>LLM:</b> <code>gpt-5-mini</code> via LangChain; DSPy LM set to <code>openai/gpt-5-mini</code>.</li>
+      <li><b>Data I/O:</b> Google Drive mount; XLSX loader populates DataFrames for examples/ENRON/Gmail.</li>
+      <li><b>Email ingest:</b> IMAP reads inbox, appends rows to <code>gmail_msgs_df</code>.</li>
+      <li><b>Build DB:</b> <code>build_db()</code> currently indexes a test claim; pre‑filter hooks TODO.</li>
+      <li><b>Retrieval:</b> <code>db_lookup()</code> + <code>lookup_in_rag</code> tool (placeholder scoring).</li>
+      <li><b>UI:</b> Gradio <code>ChatInterface</code> with auth (<code>teamNetwatch</code>/<code>5541FinalProject</code>).</li>
+    </ul>
     <hr />
 
     <h2 id="data">Data</h2>
@@ -149,6 +154,18 @@
     <div style="text-align:center;margin:18px 0 32px">
       <img style="height:300px" alt="Placeholder results figure" src="./files/results.png" />
     </div>
+    <p class="note"><b>Status (midterm):</b></p>
+    <ul>
+      <li>✅ API setup (OpenAI, Pinecone), index creation, and 3072‑d embedding flow working.</li>
+      <li>✅ Google Drive XLSX import populates <code>example_claims_df</code>, <code>enron_*_df</code>, and <code>gmail_*_df</code>.</li>
+      <li>✅ Gmail IMAP ingestion functioning; rows appended to <code>gmail_msgs_df</code>.</li>
+      <li>✅ LangGraph chatbot + retrieval tool wired; Gradio demo online (local auth).</li>
+      <li>🟨 Claim splitter scaffolded (not yet enforcing atomicity in pipeline).</li>
+      <li>🟨 MoE classifier heads planned; thresholds/metadata schema drafted.</li>
+      <li>🟨 Retrieval scoring uses placeholder RNG; will replace with semantic RRF + filter‑aware boosts.</li>
+      <li>⚠️ Engineering note: a legacy helper defines a 768‑dim Pinecone path; unify on 3072 to match <code>text-embedding-3-large</code>.</li>
+      <li>⚠️ Engineering note: Gemini scratch helper is inactive; keep gated or remove.</li>
+    </ul>
     <hr />
 
     <h2 id="plan">Plan & Risks</h2>
@@ -157,63 +174,12 @@
       <li><b>Week 3:</b> Run Vanilla vs. Pre‑filtered vs. LLM‑filtered comparisons on held‑out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
       <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
     </ul>
-    <p><b>Risks.</b> Email‑level labels → create synthetic claim‑level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata.</p>
+    <p><b>Risks.</b> Email‑level labels → create synthetic claim‑level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
     <hr />
 
     <h2 id="conclusion">Conclusion & Future Work</h2>
     <p>We introduce ingestion‑time appropriateness filtering for corporate RAG: claim‑level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
     <hr />
-
-    <h2 id="rubric-map">Rubric Mapping (Midterm)</h2>
-    <ul>
-      <li><b>(1 pt) Idea development:</b> defined claim‑level MoE filters; concrete eval plan.</li>
-      <li><b>(1 pt) Project webpage:</b> this page (code/links above).</li>
-      <li><b>(2 pts) Preliminary results vs. baselines:</b> table scaffold + metrics; populate with numbers post‑office hour.</li>
-      <li><b>(1 pt) Plan to address feedback:</b> see Mentor Feedback Plan below.</li>
-    </ul>
-
-    <h3 id="mentor-plan">Mentor Feedback Plan</h3>
-    <ol>
-      <li>Threshold calibration strategy (optimize P@R vs. AUROC?)</li>
-      <li>Claim splitting robustness and evaluation</li>
-      <li>Privacy/PII detection scope (names, emails, IDs, locations)</li>
-      <li>RAG metrics selection and test design</li>
-      <li>Ablations to prove pre‑filter value vs. re‑rank only</li>
-    </ol>
-
-    <!-- =====================
-      OFFICE HOUR PACK (for internal use; not needed on public site if undesired)
-      Copy/paste the following into your notes/Canvas submission.
-    ======================= -->
-    <!--
-    === Office Hour Agenda (15–20 min) ===
-    1) 60s project recap (problem, method, data, novelty)
-    2) 5 min demo: ingestion → claim split → filter scores → Claim DB → RAG chat
-    3) 5 min results so far: show Table 1 scaffold; discuss metrics; show 2–3 qualitative examples
-    4) 5–8 min mentor Q&A on risks/next steps
-
-    === Questions for Mentor ===
-    • Are our appropriateness heads and labels sufficient? What would you add/remove?
-    • Preferred operating point for filters (high precision vs balanced)?
-    • Best practice to evaluate sarcasm’s downstream harm to QA?
-    • Privacy evaluation: what PII set & redaction policy would you expect?
-    • Which ablations are most convincing for the midterm/final?
-
-    === Canvas Midterm Write‑up Template ===
-    1) Intermediate Progress (since proposal):
-       – Implemented ingestion + claim splitting; trained initial relevance/tone/privacy heads; built evaluation harness; webpage live.
-    2) Preliminary Results vs Baseline:
-       – Baseline: vanilla RAG on unfiltered Enron subset.
-       – Ours: pre‑filtered RAG w/ MoE thresholds. (Report EM/F1, faithfulness, PII leak.)
-       – Include 1 figure + Table 1 with numbers.
-    3) Mentor Feedback (bullets):
-       – [Fill after meeting]
-    4) Plan to Address Feedback & Path to Final:
-       – Threshold calibration, data augmentation, ablations schedule, risk mitigations.
-    5) Links:
-       – Webpage, code repo, model weights (if any), slides (if any).
-    -->
-
   </div>
 </body>
 </html>
