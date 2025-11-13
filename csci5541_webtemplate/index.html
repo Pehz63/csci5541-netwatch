@@ -130,24 +130,7 @@
       </ul>
     <hr />
 
-    <h2 id="claimify">Claim Creation Module</h2>
-    <p>
-      <b>Owner:</b> S. Subramanian. <b>
-    </p>
-    <p>
-        Our current Claim Creation  prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
-    </p>
-    <ul>
-      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
-      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
-      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
-      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
-    </ul>
-
     <h2 id="claimify">Claim Extraction Module</h2>
-    <p>
-      <b>Owner:</b> S. Subramanian.
-    </p>
     <p>
         Our current Claim Creation prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
     </p>
