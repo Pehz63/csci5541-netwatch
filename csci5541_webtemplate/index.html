@@ -32,7 +32,7 @@
     <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
     <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
 
-    <p class="tagline">Demonstration methodology to increase enterprise RAG quality by <em>pre-embedding filtering</em> of claim-level content, pulled from informal communications such as email or Slack.</p>
+    <p class="tagline">Demonstration of methodology to increase enterprise RAG quality by <em>pre-embedding filtering</em> of claim-level content, pulled from informal communications such as email or Slack.</p>
 
     <div class="authors-wrapper">
       <div class="author-container">
@@ -75,7 +75,10 @@
 
     <h2 id="abstract">Abstract</h2>
     <p>
-      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below-threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). 
+    </p>  
+    <p>
+      In our demo we show a pipeline that downloads emails received to an <a href="mailto:netwatch5541@gmail.com">email address</a>, converts this email into specific claims, and then ranks the claims on various attributes to automatically decide which claims are kept and which are dropped; with retained claims keeping scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
     </p>
     <hr />
 
@@ -97,7 +100,7 @@
     <h2 id="approach">Approach</h2>
     <div class="callout">
       <ol>
-        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Parse message text, headers, thread context.</li>
+        <li><b>Ingestion.</b> Gmail for demo (IMAP via <code>imaplib</code>) + ENRON emails for testing (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Email message parsed into text, headers, thread context.</li>
         <li><b>Claim decomposition.</b> A claim creation, decomposition, and verification module—adapted from Microsoft’s “Claimify” methodology—splits messages into atomic claims; ambiguous spans preserved with context.</li>
         <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7-step CoT + 2-step ReAct classifier.ipynb”</b> implementing per-claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa-large heads are planned; LLM classifiers are the present default.</li>
         <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
@@ -107,19 +110,47 @@
     <p><b>Baselines.</b> (A) Vanilla RAG (no pre-filter). (B) RAG + LLM re-rank/filters (zero-/few-shot). (C) Optional: post-filter RRF only.</p>
     <p><b>Novelty.</b> We evaluate ingestion-time, claim-level filtering in an informal-communications domain where appropriate and non-appropriate content co-exist within messages, and run end-to-end ablations to quantify compounding effects.</p>
 
-    <h3 id="impl">Implementation Snapshot</h3>
-    <ul>
-      <li><b>Technologies:</b> Implemented in Python using Google Colab.</li>
-      <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
-      <li><b>Vector database:</b> Pinecone (hosted on AWS us-east-1), orchestrated via LangGraph tool calls.</li>
-      <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
-      <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
-    </ul>
+    <h3 id="impl">Overall Implementation Snapshot</h3>
+      <ul>
+        <li><b>Technologies:</b> Implemented in Python using Google Colab.
+        <ul>
+          <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
+          <li><b>Vector database:</b> Pinecone (hosted on AWS <code>us-east-1</code>), orchestrated via LangGraph tool calls.</li>
+          <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
+          <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
+        </ul>
+        </li>
+        <li><b>Agent/UI:</b> LangGraph state graph with tool calling - linked to Gradio <code>ChatInterface</code>.</li>
+        <li><b>Email ingest:</b> IMAP to <code>netwatch5541@gmail.com</code>; appends rows to <code>gmail_msgs_df</code>.</li>
+        <li><b>Create Claims:</b> Convert complex <code>gmail_msgs_df</code> into <code>gmail_claims_df</code> </li>
+        <li><b>Filter Claims:</b> Score claims and append rankings to <code>gmail_claims_df</code> </li>
+        <li><b>Build DB:</b> <code>build_db()</code> embeds and indexes claims.</li>
+        <li><b>Retrieval:</b> <code>db_lookup()</code> and tool <code>lookup_in_rag</code> (currently with RRF placeholder).</li>
 
+      </ul>
     <hr />
 
-    <h2 id="claimify">Sunder’s Claimify Module</h2>
-    <p><b>Owner:</b> S. Subramanian. <b>Notebook:</b> <i>Claim 7-step CoT + 2-step ReAct classifier.ipynb</i> (to be merged into main).</p>
+    <h2 id="claimify">Claim Creation Module</h2>
+    <p>
+      <b>Owner:</b> S. Subramanian. <b>
+    </p>
+    <p>
+        Our current Claim Creation  prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
+    </p>
+    <ul>
+      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
+      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
+      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
+      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
+    </ul>
+
+    <h2 id="claimify">Claim Extraction Module</h2>
+    <p>
+      <b>Owner:</b> S. Subramanian.
+    </p>
+    <p>
+        Our current Claim Creation prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
+    </p>
     <ul>
       <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
       <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
@@ -129,18 +160,20 @@
 
     <hr />
     <h2 id="data">Data</h2>
-    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
-    <p><b>Claim extraction eval.</b> Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we are also considering to construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> For our Claim Extraction we hope to ultimately Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
     <hr />
 
     <h2 id="results">Preliminary Results & Evaluation</h2>
 
     <!-- Qualitative results from initial testing (added) -->
     <h3>Qualitative results (initial testing)</h3>
+    <p> Based on initial testing we observed the following trends:
     <ul>
-      <li><b>Claims:</b> Overall we see… <i>[Sunder to complete]</i></li>
+      <li><b>Claims:</b> The claim generation system we have created works at varying levels of proficiency based on the type of prompt that we input into the LLM. In particular the LLm still seems to struggle to generate fully independently understandable claims - for example, creating claims that reference previous claims without including the necessary context. Given the ultimate usage of the Claims, after first reviews we consider it likely that we will also have to add a context summary alongside each claim.</li>
       <li><b>Filters:</b> The <i>Confidentiality</i> filter appears most sensitive in spot-checks—LLM tends to over-flag mentions of “private/confidential” even when referring to a separate document (e.g., an email announcing a new “Confidentiality Policy” isn’t itself confidential). Conversely, the <i>Toxicity</i> filter generally detects toxic CoT but underrates misogyny and other “casual” toxic language.</li>
     </ul>
+    </p>
 
     <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
     <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre-filtering. We drop ROUGE-L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
