@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Appropriateness Filtering for Corporate RAG Database Storage | CSCI 5541 (Fall 2025)</title>
+  <link rel="stylesheet" href="./files/bulma.min.css" />
+  <link rel="stylesheet" href="./files/styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com/" />
+  <link href="./files/css2" rel="stylesheet" />
+  <link href="./files/css" rel="stylesheet" />
+  <base href="." target="_blank" />
+  <style>
+    .wrapper{max-width:980px;margin:0 auto;padding:24px}
+    .sys-img img{width:100%;height:auto}
+    .authors-wrapper{display:flex;gap:18px;flex-wrap:wrap}
+    .author-container{display:flex;flex-direction:column;align-items:center}
+    .author-image img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#eee}
+    .taglist{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+    .kbd{background:#f5f5f5;border:1px solid #ddd;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:monospace}
+    .sys-img.teaser img{width:auto;max-height:420px;display:block;margin:0 auto}
+    table{margin:0 auto}
+    caption{caption-side:bottom;padding-top:8px}
+    .note{font-size:.95rem;color:#444}
+    .callout{background:#f7fbff;border:1px solid #cfe8ff;border-radius:10px;padding:12px}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1 style="font-family:'Lato',sans-serif;">Appropriateness Filtering for Corporate RAG Database Storage</h1>
+    <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
+    <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
+
+    <p class="tagline">Reducing "rubbish in, rubbish out" for enterprise RAG by <em>pre-embedding filtering</em> of claim-level content from informal communications (email/Slack).</p>
+
+    <div class="authors-wrapper">
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Alex_B.png" alt="A. Berg" /></div>
+        <p><strong>Alex Berg</strong><br/><small><a href="mailto:ber00221@umn.edu">ber00221@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Zeph_J.jpg" alt="Z. Johnson" /></div>
+        <p><strong>Zephaniah Johnson</strong><br/><small><a href="mailto:joh15514@umn.edu">joh15514@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Alex_S.jpg" alt="A. Slinger" /></div>
+        <p><strong>Alex Slinger</strong><br/><small><a href="mailto:sling031@umn.edu">sling031@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Sunder_S.png" alt="S. Subramanian" /></div>
+        <p><strong>Sunder Subramanian</strong><br/><small><a href="mailto:subra287@umn.edu">subra287@umn.edu</a></small></p>
+      </div>
+    </div>
+
+    <br />
+
+    <div class="authors-wrapper">
+      <div class="publication-links">
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Final Report</span></a>
+        </span>
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code</span></a>
+        </span>
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Model Weights</span></a>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrapper">
+    <hr />
+
+    <h2 id="abstract">Abstract</h2>
+    <p>
+      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). Below-threshold claims are dropped; retained claims keep scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+    </p>
+    <hr />
+
+    <h2 id="teaser">Teaser Figure</h2>
+    <p>High-level NetWatch flow: ingestion → claim extraction → modular filtering → embedding/storage → retrieval &amp; QA.</p>
+    <p class="sys-img teaser">
+      <img src="./files/full_workflow.png" alt="Project pipeline diagram" />
+    </p>
+    <h3 id="teaser-notes">Notes</h3>
+    <p class="note">Classifier scores are stored as metadata for retrieval-time re-weighting, allowing ambiguous claims to be down-ranked instead of hard-dropped.</p>
+    <hr />
+
+    <h2 id="introduction">Introduction / Background / Motivation</h2>
+    <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
+    <p><b>Gap.</b> Prior work emphasizes post-retrieval tricks (graph fusion, RRF); little evaluates <i>source-level</i> filtering before embedding when full context (headers/threads) is available.</p>
+    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post-hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
+    <hr />
+
+    <h2 id="approach">Approach</h2>
+    <div class="callout">
+      <ol>
+        <li><b>Ingestion.</b> Gmail (IMAP via <code>imaplib</code>) demo + ENRON emails (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Parse message text, headers, thread context.</li>
+        <li><b>Claim decomposition.</b> A claim creation, decomposition, and verification module—adapted from Microsoft’s “Claimify” methodology—splits messages into atomic claims; ambiguous spans preserved with context.</li>
+        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7-step CoT + 2-step ReAct classifier.ipynb”</b> implementing per-claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa-large heads are planned; LLM classifiers are the present default.</li>
+        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool calls (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy is used for more complex prompt/program structuring.</li>
+      </ol>
+    </div>
+    <p><b>Baselines.</b> (A) Vanilla RAG (no pre-filter). (B) RAG + LLM re-rank/filters (zero-/few-shot). (C) Optional: post-filter RRF only.</p>
+    <p><b>Novelty.</b> We evaluate ingestion-time, claim-level filtering in an informal-communications domain where appropriate and non-appropriate content co-exist within messages, and run end-to-end ablations to quantify compounding effects.</p>
+
+    <h3 id="impl">Implementation Snapshot</h3>
+    <ul>
+      <li><b>Technologies:</b> Implemented in Python using Google Colab.</li>
+      <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
+      <li><b>Vector database:</b> Pinecone (hosted on AWS us-east-1), orchestrated via LangGraph tool calls.</li>
+      <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
+      <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
+    </ul>
+
+    <hr />
+
+    <h2 id="claimify">Sunder’s Claimify Module</h2>
+    <p><b>Owner:</b> S. Subramanian. <b>Notebook:</b> <i>Claim 7-step CoT + 2-step ReAct classifier.ipynb</i> (to be merged into main).</p>
+    <ul>
+      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
+      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
+      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
+      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
+    </ul>
+
+    <hr />
+    <h2 id="data">Data</h2>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <hr />
+
+    <h2 id="results">Preliminary Results & Evaluation</h2>
+
+    <!-- Qualitative results from initial testing (added) -->
+    <h3>Qualitative results (initial testing)</h3>
+    <ul>
+      <li><b>Claims:</b> Overall we see… <i>[Sunder to complete]</i></li>
+      <li><b>Filters:</b> The <i>Confidentiality</i> filter appears most sensitive in spot-checks—LLM tends to over-flag mentions of “private/confidential” even when referring to a separate document (e.g., an email announcing a new “Confidentiality Policy” isn’t itself confidential). Conversely, the <i>Toxicity</i> filter generally detects toxic CoT but underrates misogyny and other “casual” toxic language.</li>
+    </ul>
+
+    <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
+    <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre-filtering. We drop ROUGE-L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
+
+    <h3>Classifier Metrics (per-head, claim level)</h3>
+    <table class="table is-fullwidth is-striped">
+      <thead>
+        <tr>
+          <th style="text-align:center">Classifier (current)</th>
+          <th style="text-align:center">Source</th>
+          <th style="text-align:center">Accept Acc↑</th>
+          <th style="text-align:center">Reject Acc↑</th>
+          <th style="text-align:center">Balanced Acc↑</th>
+          <th style="text-align:center">Precision<sub>accept</sub>↑</th>
+          <th style="text-align:center">Precision<sub>reject</sub>↑</th>
+          <th style="text-align:center">AUPRC / ROC-AUC↑</th>
+          <th style="text-align:center">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center"><b>Relevance</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Finetune planned (RoBERTa-large)</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>PII / Confidentiality</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Redaction candidates emitted</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Tone / Sarcasm</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Down-rank if ambiguous</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Toxicity</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Gate hard above threshold</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Speculation / Opinion</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Store w/ flag vs. drop</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Inconsistency</b></td>
+          <td style="text-align:center">LLM CoT+ReAct</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Cross-claim check (planned)</td>
+        </tr>
+      </tbody>
+      <caption>Table A. Per-classifier gating metrics focused on <i>accept/reject</i> behavior.</caption>
+    </table>
+
+    <h3>Retrieval/QA Metrics (system level)</h3>
+    <table class="table is-fullwidth is-striped">
+      <thead>
+        <tr>
+          <th style="text-align:center">Setting</th>
+          <th style="text-align:center">nDCG@10↑</th>
+          <th style="text-align:center">P@10↑</th>
+          <th style="text-align:center">PII Leak↓</th>
+          <th style="text-align:center">Faithfulness↑</th>
+          <th style="text-align:center">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center"><b>Vanilla RAG</b></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">No filtering</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>Pre-filtered RAG (ours)</b></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Claim-level MoE; metadata re-weighting</td>
+        </tr>
+        <tr>
+          <td style="text-align:center"><b>LLM-filtered RAG</b></td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">TBD</td>
+          <td style="text-align:center">Zero/few-shot filters</td>
+        </tr>
+      </tbody>
+      <caption>Table B. Retrieval/QA metrics (no ROUGE-L); populate with midterm numbers.</caption>
+    </table>
+
+    <p class="note"><b>Status (midterm):</b></p>
+    <ul>
+      <li>✅ APIs + index + 3072-d embeddings in place; retrieval tool wired into LangGraph agent.</li>
+      <li>✅ XLSX/ENRON + Gmail IMAP ingest working.</li>
+      <li>🟨 Claimify (LLM CoT+ReAct) active as default classifiers; moving into main file.</li>
+      <li>🟨 RRF and filter-aware boosts to replace placeholder RNG.</li>
+      <li>⚠️ Unify any 768-dim vestiges; keep Gemini helper gated/removed.</li>
+    </ul>
+    <hr />
+
+    <h2 id="plan">Plan & Risks</h2>
+    <ul>
+      <li><b>Week 1–2:</b> Fine-tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
+      <li><b>Week 3:</b> Run Vanilla vs. Pre-filtered vs. LLM-filtered comparisons on held-out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
+      <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
+    </ul>
+    <p><b>Risks.</b> Email-level labels → create synthetic claim-level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
+    <hr />
+
+    <h2 id="conclusion">Conclusion & Future Work</h2>
+    <p>We introduce ingestion-time appropriateness filtering for corporate RAG: claim-level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
+    <hr />
+  </div>
+</body>
+</html>
