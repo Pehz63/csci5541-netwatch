@@ -304,8 +304,17 @@
 
     <hr />
 
-    <h2 id="conclusion">Conclusion & Future Work</h2>
-    <p>We introduce ingestion-time appropriateness filtering for corporate RAG: claim-level MoE classifiers decide what to store and how to weight retrieval. Next, we will broaden datasets (Avocado), expand filters (consistency checking against KB), and evaluate redaction policies vs. hard drops.</p>
+    <h2 id="conclusion">Conclusion &amp; Future Work</h2>
+
+    <p>
+    Pre-embedding filtering offers an effective way to convert informal corporate communications into a dependable RAG knowledge base. By decomposing emails into claim-level statements and applying modular risk filters, inappropriate or low-value information is removed before embedding, improving privacy and retrieval quality. Empirical results show balanced accuracies around 73–74% under optimized prompting, consistent with the limits set by human annotation noise. The method demonstrates that ingestion-stage filtering materially strengthens RAG performance and reduces organizational risk.
+    </p>
+
+    <h3>Future Work</h3>
+    <p>
+    Next steps include extending the pipeline to chat logs and meeting transcripts, improving classifier stability and latency, expanding and clarifying annotation rubrics to increase agreement, adding redaction strategies alongside filtering, and incorporating cross-claim consistency checks using a structured organizational knowledge base.
+    </p>
+
     <hr />
   </div>
 </body>
