@@ -147,164 +147,161 @@
     <p><b>Claim extraction eval.</b> For our Claim Extraction we hope to ultimately Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
     <hr />
 
-    <h2 id="results">Preliminary Results & Evaluation</h2>
+    <h2 id="results">Results</h2>
 
-    <!-- Qualitative results from initial testing (added) -->
-    <h3>Qualitative results (initial testing)</h3>
-    <p> Based on initial testing we observed the following trends:
-    <ul>
-      <li><b>Claims:</b> The claim generation system we have created works at varying levels of proficiency based on the type of prompt that we input into the LLM. In particular the LLm still seems to struggle to generate fully independently understandable claims - for example, creating claims that reference previous claims without including the necessary context. Given the ultimate usage of the Claims, after first reviews we consider it likely that we will also have to add a context summary alongside each claim.</li>
-      <li><b>Filters:</b> The <i>Confidentiality</i> filter appears most sensitive in spot-checks—LLM tends to over-flag mentions of “private/confidential” even when referring to a separate document (e.g., an email announcing a new “Confidentiality Policy” isn’t itself confidential). Conversely, the <i>Toxicity</i> filter generally detects toxic CoT but underrates misogyny and other “casual” toxic language.</li>
-    </ul>
+    <p>
+    Our final empirical evaluation produced two quantitative result sets:
+    (1) ablation experiments measuring balanced accuracy for alternative prompting and classifier
+    architectures, and (2) a development-time tradeoff table comparing model latency versus accuracy.
+    These constitute the full numerical results of the completed project.
     </p>
 
-    <div class="callout"><b>Live Demo (local auth)</b>: Gradio chat is protected with <code>teamNetwatch</code> / <code>5541FinalProject</code>. Share link available during mentor meeting.</div>
-    <p><b>Two tracks.</b> (1) <i>Classifier gating quality</i> on claims. (2) <i>Retrieval/QA utility</i> after pre-filtering. We drop ROUGE-L (not appropriate for this task) and use metrics aligned to accept/reject behavior and retrieval ranking quality.</p>
+    <!-- ============================= -->
+    <!-- Table 1 — Ablation Results    -->
+    <!-- ============================= -->
 
-    <h3>Classifier Metrics (per-head, claim level)</h3>
+    <h3>Ablation Performance (Balanced Accuracy)</h3>
+
     <table class="table is-fullwidth is-striped">
-      <thead>
-        <tr>
-          <th style="text-align:center">Classifier (current)</th>
-          <th style="text-align:center">Source</th>
-          <th style="text-align:center">Accept Acc↑</th>
-          <th style="text-align:center">Reject Acc↑</th>
-          <th style="text-align:center">Balanced Acc↑</th>
-          <th style="text-align:center">Precision<sub>accept</sub>↑</th>
-          <th style="text-align:center">Precision<sub>reject</sub>↑</th>
-          <th style="text-align:center">AUPRC / ROC-AUC↑</th>
-          <th style="text-align:center">Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="text-align:center"><b>Relevance</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Finetune planned (RoBERTa-large)</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>PII / Confidentiality</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Redaction candidates emitted</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>Tone / Sarcasm</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Down-rank if ambiguous</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>Toxicity</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Gate hard above threshold</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>Speculation / Opinion</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Store w/ flag vs. drop</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>Inconsistency</b></td>
-          <td style="text-align:center">LLM CoT+ReAct</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Cross-claim check (planned)</td>
-        </tr>
-      </tbody>
-      <caption>Table A. Per-classifier gating metrics focused on <i>accept/reject</i> behavior.</caption>
+    <thead>
+      <tr>
+        <th style="text-align:center">Model Version</th>
+        <th style="text-align:center">Balanced Accuracy</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr><td><b>Final single-prompt model</b> (1 filter, GPT-5.1, optimized Few-shot)</td>
+          <td style="text-align:center">73.0%</td></tr>
+
+      <tr><td>→ manual True/False examples</td>
+          <td style="text-align:center">72.7%</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">71.2%</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">71.4%</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">70.8%</td></tr>
+
+      <tr><td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">61.0%</td></tr>
+
+      <tr><td><b>Final multilayer model</b> (7 filters, GPT-5.1, No-CoT Few-shot)</td>
+          <td style="text-align:center">73.9%</td></tr>
+
+      <tr><td>Multilayer (with CoT, True/False Few-shot)</td>
+          <td style="text-align:center">62.1%</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">63.2%</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">63.6%</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">73.1%</td></tr>
+
+      <tr><td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">59.0%</td></tr>
+
+    </tbody>
+    <caption>
+    Table 1. Balanced accuracy across ablation settings measuring the contribution of CoT,
+    example selection, prompting depth, and LLM choice.
+    </caption>
     </table>
 
-    <h3>Retrieval/QA Metrics (system level)</h3>
+    <hr/>
+
+    <!-- ============================================= -->
+    <!-- Table 2 — Model Development Time vs Accuracy  -->
+    <!-- ============================================= -->
+
+    <h3>Model Development Accuracy & Compute Time</h3>
+
     <table class="table is-fullwidth is-striped">
-      <thead>
-        <tr>
-          <th style="text-align:center">Setting</th>
-          <th style="text-align:center">nDCG@10↑</th>
-          <th style="text-align:center">P@10↑</th>
-          <th style="text-align:center">PII Leak↓</th>
-          <th style="text-align:center">Faithfulness↑</th>
-          <th style="text-align:center">Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="text-align:center"><b>Vanilla RAG</b></td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">No filtering</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>Pre-filtered RAG (ours)</b></td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Claim-level MoE; metadata re-weighting</td>
-        </tr>
-        <tr>
-          <td style="text-align:center"><b>LLM-filtered RAG</b></td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">TBD</td>
-          <td style="text-align:center">Zero/few-shot filters</td>
-        </tr>
-      </tbody>
-      <caption>Table B. Retrieval/QA metrics (no ROUGE-L); populate with midterm numbers.</caption>
+    <thead>
+      <tr>
+        <th style="text-align:center">Model Version</th>
+        <th style="text-align:center">Balanced Accuracy</th>
+        <th style="text-align:center">Compute Time</th>
+        <th style="text-align:center">Complexity</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <tr><td><b>Final multilayer model</b> — 1 filter, GPT-5-mini, zero-shot</td>
+          <td style="text-align:center">61.0%</td>
+          <td style="text-align:center">17 min</td>
+          <td style="text-align:center">Very Low</td></tr>
+
+      <tr><td>→ adjusted to GPT-5.1</td>
+          <td style="text-align:center">70.8%</td>
+          <td style="text-align:center">2 min</td>
+          <td style="text-align:center">Very Low</td></tr>
+
+      <tr><td>→ adjusted to CoT</td>
+          <td style="text-align:center">71.4%</td>
+          <td style="text-align:center">15 min</td>
+          <td style="text-align:center">Low</td></tr>
+
+      <tr><td>→ adjusted to 2 True examples</td>
+          <td style="text-align:center">71.2%</td>
+          <td style="text-align:center">18 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ adjusted to 2 True + 1 False example</td>
+          <td style="text-align:center">72.7%</td>
+          <td style="text-align:center">20 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ adjusted to optimized examples</td>
+          <td style="text-align:center">71.2%</td>
+          <td style="text-align:center">24 min</td>
+          <td style="text-align:center">Very High</td></tr>
+
+      <tr><td><b>Final multilayer model</b> — 7 filters, GPT-5.1, No-CoT Few-shot</td>
+          <td style="text-align:center">73.9%</td>
+          <td style="text-align:center">20.4 min</td>
+          <td style="text-align:center">High</td></tr>
+
+      <tr><td>Comparison multilayer — 7 filters, GPT-5.1, CoT Few-shot</td>
+          <td style="text-align:center">62.1%</td>
+          <td style="text-align:center">155 min</td>
+          <td style="text-align:center">Very High</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">63.2%</td>
+          <td style="text-align:center">99 min</td>
+          <td style="text-align:center">High</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">63.6%</td>
+          <td style="text-align:center">110 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">73.1%</td>
+          <td style="text-align:center">90 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ downgraded to GPT-5-mini</td>
+          <td style="text-align:center">59.0%</td>
+          <td style="text-align:center">146 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+    </tbody>
+
+    <caption>
+    Table 2. Development-time tradeoffs showing how prompting strategy, example usage,
+    and model size influence accuracy and compute cost.
+    </caption>
     </table>
 
-    <p class="note"><b>Status (midterm):</b></p>
-    <ul>
-      <li>✅ APIs + index + 3072-d embeddings in place; retrieval tool wired into LangGraph agent.</li>
-      <li>✅ XLSX/ENRON + Gmail IMAP ingest working.</li>
-      <li>🟨 Claimify (LLM CoT+ReAct) active as default classifiers; moving into main file.</li>
-      <li>🟨 RRF and filter-aware boosts to replace placeholder RNG.</li>
-      <li>⚠️ Unify any 768-dim vestiges; keep Gemini helper gated/removed.</li>
-    </ul>
-    <hr />
-
-    <h2 id="plan">Plan & Risks</h2>
-    <ul>
-      <li><b>Week 1–2:</b> Fine-tune relevance/tone/privacy heads; calibrate thresholds; stand up Pinecone + LangChain flow.</li>
-      <li><b>Week 3:</b> Run Vanilla vs. Pre-filtered vs. LLM-filtered comparisons on held-out mixed ENRON set; report EM/F1, faithfulness, PII leak.</li>
-      <li><b>Week 4:</b> Optional semantic RRF ablation; error analysis; finalize slides/report/site.</li>
-    </ul>
-    <p><b>Risks.</b> Email-level labels → create synthetic claim-level supervision; class imbalance → weighted sampling/focal loss; privacy eval → synthetic PII injections; ambiguity → keep with metadata; <b>engineering</b> → unify index dimension (avoid 768 vs 3072 mismatch), replace placeholder RNG scoring with RRF, guard optional Gemini code paths.</p>
     <hr />
 
     <h2 id="conclusion">Conclusion & Future Work</h2>
