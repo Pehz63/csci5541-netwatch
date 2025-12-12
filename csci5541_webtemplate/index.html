@@ -58,248 +58,371 @@
     <div class="authors-wrapper">
       <div class="publication-links">
         <span class="link-block">
-          <a href="https://drive.google.com/file/d/11HSL7ODYLyLKkGlfHAZ_U88hyoZYXHGc/view?usp=drive_link" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Proposal Report</span></a>
+          <a href="https://drive.google.com/file/d/1obnKf6Ce1kFNnq7v_GVe8zXkgA1gKC6E/view?usp=sharing" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Proposal Report</span></a>
         </span>
         <span class="link-block">
-          <a href="https://colab.research.google.com/drive/1HhQKr6h5e2XAdOrq29xhmdmbmksw4YQA?usp=drive_link" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code</span></a>
-        </span>
-        <span class="link-block">
-          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Model Weights</span></a>
+          <a href="https://drive.google.com/file/d/1YnDOI3AoUNUrtaROnrkHDFnjNrRWlU79/view?usp=sharing" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code files (ZIP)</span></a>
         </span>
       </div>
     </div>
   </div>
 
-  <div class="wrapper">
+<div class="wrapper">
     <hr />
 
     <h2 id="abstract">Abstract</h2>
     <p>
-      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). 
-    </p>  
+      Corporate RAG systems often ingest unstructured email and chat that mix high-value institutional
+      knowledge with personal, sensitive, or low-information content. We propose a pre-embedding
+      filtering framework that decomposes emails into granular claims and classifies each for
+      appropriateness using modular risk criteria (relevance, confidentiality, sarcasm, opinion,
+      toxicity, personal vs business, temporal) before embedding.
+    </p>
     <p>
-      In our demo we show a pipeline that downloads emails received to an <a href="mailto:netwatch5541@gmail.com">email address</a>, converts this email into specific claims, and then ranks the claims on various attributes to automatically decide which claims are kept and which are dropped; with retained claims keeping scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+      Using an Enron-derived claim dataset with human annotations, we compare single-pass and
+      multilayer LLM-based filters against human “keep/discard” labels. The best configurations reach
+      balanced accuracies around 73–74%, remove most irrelevant claims while preserving the majority
+      of important ones, reduce vector store size by ~81%, and prevent filtered content from being
+      retrieved by downstream RAG agents.
     </p>
     <hr />
 
     <h2 id="teaser">Teaser Figure</h2>
-    <p>High-level NetWatch flow: ingestion → claim extraction → modular filtering → embedding/storage → retrieval &amp; QA.</p>
+    <p>Pipeline: ingestion → claim extraction → risk filtering → embedding → retrieval &amp; QA.</p>
     <p class="sys-img teaser">
       <img src="./files/full_workflow.png" alt="Project pipeline diagram" />
     </p>
     <h3 id="teaser-notes">Notes</h3>
-    <p class="note">Classifier scores are stored as metadata for retrieval-time re-weighting, allowing ambiguous claims to be down-ranked instead of hard-dropped.</p>
+    <p class="note">
+      In the multilayer design, each claim receives per-category risk scores that drive a
+      keep/discard decision and can later be used to tune retrieval by risk type.
+    </p>
     <hr />
 
-    <h2 id="introduction">Introduction / Background / Motivation</h2>
-    <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
-    <p><b>Gap.</b> Prior work emphasizes post-retrieval tricks (graph fusion, RRF); little evaluates <i>source-level</i> filtering before embedding when full context (headers/threads) is available.</p>
-    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post-hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
+    <h2 id="introduction">Introduction / Motivation</h2>
+    <p>
+      RAG is increasingly used to expose internal knowledge, but the underlying vector stores often
+      contain informal communications where business-relevant and inappropriate content co-exist in
+      the same message. Prior work largely optimizes retrieval and reranking after embedding, rather
+      than controlling what enters the database. We instead study claim-level, ingestion-time
+      filtering of corporate emails and ask whether it can simultaneously improve retrieval quality
+      and reduce privacy and compliance risk.
+    </p>
     <hr />
 
     <h2 id="approach">Approach</h2>
     <div class="callout">
       <ol>
-        <li><b>Ingestion.</b> Gmail for demo (IMAP via <code>imaplib</code>) + ENRON emails for testing (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Email message parsed into text, headers, thread context.</li>
-        <li><b>Claim decomposition.</b> A claim creation, decomposition, and verification module—adapted from Microsoft’s “Claimify” methodology—splits messages into atomic claims; ambiguous spans preserved with context.</li>
-        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7-step CoT + 2-step ReAct classifier.ipynb”</b> implementing per-claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa-large heads are planned; LLM classifiers are the present default.</li>
-        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
-        <li><b>QA agent.</b> LangChain + LangGraph tool calls (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy is used for more complex prompt/program structuring.</li>
+        <li>
+          <b>Data & ingestion.</b> We use the Berkeley-labelled Enron email subset (~1,700 emails) as
+          our primary corpus and construct a claim-level dataset via LLM-based extraction.
+        </li>
+        <li>
+          <b>Claim extraction.</b> A DSPy-driven prompt runs three steps—selection, disambiguation,
+          and decomposition—to produce standalone, context-rich claims that can be embedded and
+          filtered independently.
+        </li>
+        <li>
+          <b>Filters.</b> We implement (a) a single-pass filter that considers all seven risk
+          dimensions at once and outputs keep/discard, and (b) a multilayer filter that assigns 0–5
+          risk scores per category and aggregates them into a final label.
+        </li>
+        <li>
+          <b>Storage & retrieval.</b> Kept claims are embedded with OpenAI
+          <code>text-embedding-3-large</code> and stored in Pinecone. A LangChain-based RAG agent
+          retrieves nearest-neighbour claims to answer user questions via a Gradio UI.
+        </li>
+        <li>
+          <b>Evaluation.</b> We compare model outputs to human labels using balanced accuracy and
+          confusion matrices, analyze inter-annotator agreement, and measure effects on index size and
+          latency versus a “vanilla RAG” baseline that stores all sentence chunks.
+        </li>
       </ol>
     </div>
-    <p><b>Baselines.</b> (A) Vanilla RAG (no pre-filter). (B) RAG + LLM re-rank/filters (zero-/few-shot). (C) Optional: post-filter RRF only.</p>
-    <p><b>Novelty.</b> We evaluate ingestion-time, claim-level filtering in an informal-communications domain where appropriate and non-appropriate content co-exist within messages, and run end-to-end ablations to quantify compounding effects.</p>
 
-    <h3 id="impl">Overall Implementation Snapshot</h3>
-      <ul>
-        <li><b>Technologies:</b> Implemented in Python using Google Colab.
-        <ul>
-          <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
-          <li><b>Vector database:</b> Pinecone (hosted on AWS <code>us-east-1</code>), orchestrated via LangGraph tool calls.</li>
-          <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
-          <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
-        </ul>
-        </li>
-        <li><b>Agent/UI:</b> LangGraph state graph with tool calling - linked to Gradio <code>ChatInterface</code>.</li>
-        <li><b>Email ingest:</b> IMAP to <code>netwatch5541@gmail.com</code>; appends rows to <code>gmail_msgs_df</code>.</li>
-        <li><b>Create Claims:</b> Convert complex <code>gmail_msgs_df</code> into <code>gmail_claims_df</code> </li>
-        <li><b>Filter Claims:</b> Score claims and append rankings to <code>gmail_claims_df</code> </li>
-        <li><b>Build DB:</b> <code>build_db()</code> embeds and indexes claims.</li>
-        <li><b>Retrieval:</b> <code>db_lookup()</code> and tool <code>lookup_in_rag</code> (currently with RRF placeholder).</li>
-
-      </ul>
-    <hr />
-
-    <h2 id="claimify">Claim Extraction Module</h2>
-    <p>
-        Our current Claim Creation prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
-    </p>
+    <h3 id="impl">Implementation Snapshot</h3>
     <ul>
-      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
-      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
-      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
-      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
+      <li><b>LLMs:</b> GPT-5.1 (primary), GPT-5-mini (ablations), GPT-5.2 (comparison).</li>
+      <li><b>Prompt orchestration:</b> DSPy for signatures, chain-of-thought, and few-shot optimization.</li>
+      <li><b>Embeddings / DB:</b> <code>text-embedding-3-large</code> into a Pinecone index.</li>
+      <li><b>RAG agent / UI:</b> LangChain agent + Gradio <code>ChatInterface</code>.</li>
     </ul>
+    <hr />
+
+    <h2 id="filters">Filter Modules</h2>
+    <p>
+      Each claim is evaluated along seven dimensions: relevance, confidentiality, sarcasm, opinion,
+      toxicity, personal vs business, and temporal. The single-pass model reasons over all criteria
+      jointly to produce keep/discard, while the multilayer model scores each category separately and
+      then aggregates. The latter exposes more control over policy (e.g., tightening confidentiality
+      while relaxing temporal strictness) at the cost of higher runtime.
+    </p>
 
     <hr />
-    <h2 id="data">Data</h2>
-    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we are also considering to construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
-    <p><b>Claim extraction eval.</b> For our Claim Extraction we hope to ultimately Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <h2 id="claimify">Claim Extraction</h2>
+    <p>
+      The claim extraction prompt identifies verifiable statements, rewrites them so each is
+      self-contained, and decomposes oversaturated sentences into independent claims where
+      appropriate. This produces a numbered list of claims per email, each with an ID and text
+      string. These claim units are the basic objects for filtering, embedding, and evaluation.
+    </p>
+
+    <hr />
+    <h2 id="data">Data & Annotation</h2>
+    <p>
+      Starting from the Berkeley Enron corpus (~1,700 emails), we apply the claim extractor and then
+      manually annotate a subset of claims. Four annotators assign a value-of-information score, a
+      risk score, a binary keep/discard label (keep if value &gt; risk), and applicable risk
+      categories. About 20% of claims are double-coded. Cohen’s kappa averages around 0.25 across
+      overlapping subsets, with most pairs near 0.3–0.35 and one lower outlier, indicating that
+      “appropriateness” is subjective and that model performance is bounded by this label noise.
+    </p>
     <hr />
 
     <h2 id="results">Results</h2>
 
     <p>
-    Our final empirical evaluation produced two quantitative result sets:
-    (1) ablation experiments measuring balanced accuracy for alternative prompting and classifier
-    architectures, and (2) a development-time tradeoff table comparing model latency versus accuracy.
-    These constitute the full numerical results of the completed project.
+      We report single-pass and multilayer filter performance, development tradeoffs, and the impact
+      of design choices such as chain-of-thought, example type, and model size. Vanilla RAG
+      (storing everything) serves as a 50% balanced-accuracy baseline for keep/discard decisions.
+    </p>
+
+    <h3>Inter-Annotator Agreement</h3>
+    <p>
+      Inter-annotator agreement is modest (κ ≈ 0.25 overall), particularly for subjective categories
+      like temporal vs durable relevance and opinion. This suggests that mid-70% balanced accuracy is
+      close to the attainable ceiling when evaluated against a single rater.
     </p>
 
     <!-- ============================= -->
-    <!-- Table 1 — Ablation Results    -->
+    <!-- Table 1 — Single-pass model   -->
     <!-- ============================= -->
 
-    <h3>Ablation Performance (Balanced Accuracy)</h3>
+    <h3>Ablation Performance – Single-Pass Filter</h3>
 
     <table class="table is-fullwidth is-striped">
-    <thead>
-      <tr>
-        <th style="text-align:center">Model Version</th>
-        <th style="text-align:center">Balanced Accuracy</th>
-      </tr>
-    </thead>
-    <tbody>
+      <thead>
+        <tr>
+          <th style="text-align:center">Model Version</th>
+          <th style="text-align:center">Balanced Accuracy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Final single-layer model</b> (1 filter, GPT-5.1, optimized few-shot)</td>
+          <td style="text-align:center">73.0%</td>
+        </tr>
+        <tr>
+          <td>→ manual True/False examples</td>
+          <td style="text-align:center">72.7%</td>
+        </tr>
+        <tr>
+          <td>→ removed False counter examples</td>
+          <td style="text-align:center">71.2%</td>
+        </tr>
+        <tr>
+          <td>→ removed all examples (zero-shot)</td>
+          <td style="text-align:center">71.4%</td>
+        </tr>
+        <tr>
+          <td>→ removed CoT prompt</td>
+          <td style="text-align:center">70.8%</td>
+        </tr>
+        <tr>
+          <td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">61.0%</td>
+        </tr>
+        <tr>
+          <td><b>Vanilla RAG baseline</b> (no filtering)</td>
+          <td style="text-align:center">50.0%</td>
+        </tr>
+      </tbody>
+      <caption>
+        Table 1. Single-layer filter ablations showing the impact of examples, chain-of-thought, and
+        LLM choice on claim-level keep/discard accuracy.
+      </caption>
+    </table>
 
-      <tr><td><b>Final single-prompt model</b> (1 filter, GPT-5.1, optimized Few-shot)</td>
-          <td style="text-align:center">73.0%</td></tr>
+    <hr/>
 
-      <tr><td>→ manual True/False examples</td>
-          <td style="text-align:center">72.7%</td></tr>
+    <!-- ============================= -->
+    <!-- Table 2 — Multilayer model    -->
+    <!-- ============================= -->
 
-      <tr><td>→ removed False counter examples</td>
-          <td style="text-align:center">71.2%</td></tr>
+    <h3>Ablation Performance – Multilayer Filter</h3>
 
-      <tr><td>→ removed all examples (Zero-shot)</td>
-          <td style="text-align:center">71.4%</td></tr>
-
-      <tr><td>→ removed CoT prompt</td>
-          <td style="text-align:center">70.8%</td></tr>
-
-      <tr><td>→ downgraded model to GPT-5-mini</td>
-          <td style="text-align:center">61.0%</td></tr>
-
-      <tr><td><b>Final multilayer model</b> (7 filters, GPT-5.1, No-CoT Few-shot)</td>
-          <td style="text-align:center">73.9%</td></tr>
-
-      <tr><td>Multilayer (with CoT, True/False Few-shot)</td>
-          <td style="text-align:center">62.1%</td></tr>
-
-      <tr><td>→ removed False counter examples</td>
-          <td style="text-align:center">63.2%</td></tr>
-
-      <tr><td>→ removed all examples (Zero-shot)</td>
-          <td style="text-align:center">63.6%</td></tr>
-
-      <tr><td>→ removed CoT prompt</td>
-          <td style="text-align:center">73.1%</td></tr>
-
-      <tr><td>→ downgraded model to GPT-5-mini</td>
-          <td style="text-align:center">59.0%</td></tr>
-
-    </tbody>
-    <caption>
-    Table 1. Balanced accuracy across ablation settings measuring the contribution of CoT,
-    example selection, prompting depth, and LLM choice.
-    </caption>
+    <table class="table is-fullwidth is-striped">
+      <thead>
+        <tr>
+          <th style="text-align:center">Model Version</th>
+          <th style="text-align:center">Balanced Accuracy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Final multilayer model</b> (7 filters, GPT-5.1, manual examples)</td>
+          <td style="text-align:center">71.8%</td>
+        </tr>
+        <tr>
+          <td>→ LLM True/False examples</td>
+          <td style="text-align:center">69.8%</td>
+        </tr>
+        <tr>
+          <td>→ removed False counter examples</td>
+          <td style="text-align:center">67.8%</td>
+        </tr>
+        <tr>
+          <td>→ removed all examples (zero-shot)</td>
+          <td style="text-align:center">63.6%</td>
+        </tr>
+        <tr>
+          <td>→ removed CoT prompt</td>
+          <td style="text-align:center">73.1%</td>
+        </tr>
+        <tr>
+          <td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">59.0%</td>
+        </tr>
+        <tr>
+          <td><b>Highest scoring multilayer model</b> (7 filters, GPT-5.1, No-CoT, LLM few-shot)</td>
+          <td style="text-align:center">73.9%</td>
+        </tr>
+        <tr>
+          <td><b>Vanilla RAG baseline</b> (no filtering)</td>
+          <td style="text-align:center">50.0%</td>
+        </tr>
+      </tbody>
+      <caption>
+        Table 2. Multilayer filter ablations, including the highest scoring configuration and the
+        effect of examples and chain-of-thought.
+      </caption>
     </table>
 
     <hr/>
 
     <!-- ============================================= -->
-    <!-- Table 2 — Model Development Time vs Accuracy  -->
+    <!-- Table 3 — Model Dev Time vs Accuracy          -->
     <!-- ============================================= -->
 
-    <h3>Model Development Accuracy & Compute Time</h3>
+    <h3>Model Development Accuracy &amp; Compute Time</h3>
 
     <table class="table is-fullwidth is-striped">
-    <thead>
-      <tr>
-        <th style="text-align:center">Model Version</th>
-        <th style="text-align:center">Balanced Accuracy</th>
-        <th style="text-align:center">Compute Time</th>
-        <th style="text-align:center">Complexity</th>
-      </tr>
-    </thead>
-
-    <tbody>
-
-      <tr><td><b>Final multilayer model</b> — 1 filter, GPT-5-mini, zero-shot</td>
-          <td style="text-align:center">61.0%</td>
-          <td style="text-align:center">17 min</td>
-          <td style="text-align:center">Very Low</td></tr>
-
-      <tr><td>→ adjusted to GPT-5.1</td>
-          <td style="text-align:center">70.8%</td>
-          <td style="text-align:center">2 min</td>
-          <td style="text-align:center">Very Low</td></tr>
-
-      <tr><td>→ adjusted to CoT</td>
-          <td style="text-align:center">71.4%</td>
-          <td style="text-align:center">15 min</td>
-          <td style="text-align:center">Low</td></tr>
-
-      <tr><td>→ adjusted to 2 True examples</td>
-          <td style="text-align:center">71.2%</td>
-          <td style="text-align:center">18 min</td>
-          <td style="text-align:center">Mid</td></tr>
-
-      <tr><td>→ adjusted to 2 True + 1 False example</td>
+      <thead>
+        <tr>
+          <th style="text-align:center">Model Version</th>
+          <th style="text-align:center">Balanced Accuracy</th>
+          <th style="text-align:center">Calc. Time</th>
+          <th style="text-align:center">Complexity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Final single-layer model</b> (1 filter, GPT-5.1, optimized few-shot)</td>
+          <td style="text-align:center">73.0%</td>
+          <td style="text-align:center">30 mins</td>
+          <td style="text-align:center">Very High</td>
+        </tr>
+        <tr>
+          <td>→ LLM True/False examples</td>
           <td style="text-align:center">72.7%</td>
-          <td style="text-align:center">20 min</td>
-          <td style="text-align:center">Mid</td></tr>
-
-      <tr><td>→ adjusted to optimized examples</td>
+          <td style="text-align:center">20 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+        <tr>
+          <td>→ removed False counter examples</td>
           <td style="text-align:center">71.2%</td>
-          <td style="text-align:center">24 min</td>
-          <td style="text-align:center">Very High</td></tr>
-
-      <tr><td><b>Final multilayer model</b> — 7 filters, GPT-5.1, No-CoT Few-shot</td>
-          <td style="text-align:center">73.9%</td>
-          <td style="text-align:center">20.4 min</td>
-          <td style="text-align:center">High</td></tr>
-
-      <tr><td>Comparison multilayer — 7 filters, GPT-5.1, CoT Few-shot</td>
-          <td style="text-align:center">62.1%</td>
-          <td style="text-align:center">155 min</td>
-          <td style="text-align:center">Very High</td></tr>
-
-      <tr><td>→ removed False counter examples</td>
-          <td style="text-align:center">63.2%</td>
-          <td style="text-align:center">99 min</td>
-          <td style="text-align:center">High</td></tr>
-
-      <tr><td>→ removed all examples (Zero-shot)</td>
-          <td style="text-align:center">63.6%</td>
-          <td style="text-align:center">110 min</td>
-          <td style="text-align:center">Mid</td></tr>
-
-      <tr><td>→ removed CoT prompt</td>
-          <td style="text-align:center">73.1%</td>
-          <td style="text-align:center">90 min</td>
-          <td style="text-align:center">Mid</td></tr>
-
-      <tr><td>→ downgraded to GPT-5-mini</td>
+          <td style="text-align:center">24 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+        <tr>
+          <td>→ removed all examples (zero-shot)</td>
+          <td style="text-align:center">71.4%</td>
+          <td style="text-align:center">15 mins</td>
+          <td style="text-align:center">Low</td>
+        </tr>
+        <tr>
+          <td>→ removed CoT prompt</td>
+          <td style="text-align:center">70.8%</td>
+          <td style="text-align:center">2 mins</td>
+          <td style="text-align:center">Very Low</td>
+        </tr>
+        <tr>
+          <td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">61.0%</td>
+          <td style="text-align:center">17 mins</td>
+          <td style="text-align:center">Very Low</td>
+        </tr>
+        <tr>
+          <td><b>Final multilayer model</b> (7 filters, GPT-5.1, optimized few-shot)</td>
+          <td style="text-align:center">67.8%</td>
+          <td style="text-align:center">132 mins</td>
+          <td style="text-align:center">Very High</td>
+        </tr>
+        <tr>
+          <td>→ manual True/False examples</td>
+          <td style="text-align:center">71.8%</td>
+          <td style="text-align:center">101 mins</td>
+          <td style="text-align:center">High</td>
+        </tr>
+        <tr>
+          <td>→ LLM True/False examples</td>
+          <td style="text-align:center">69.8%</td>
+          <td style="text-align:center">52 mins</td>
+          <td style="text-align:center">High</td>
+        </tr>
+        <tr>
+          <td>→ removed False counter examples</td>
+          <td style="text-align:center">67.8%</td>
+          <td style="text-align:center">45 mins</td>
+          <td style="text-align:center">High</td>
+        </tr>
+        <tr>
+          <td>→ removed all examples (zero-shot)</td>
+          <td style="text-align:center">68.2%</td>
+          <td style="text-align:center">51 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+        <tr>
+          <td>→ removed CoT prompt</td>
+          <td style="text-align:center">70.1%</td>
+          <td style="text-align:center">16 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+        <tr>
+          <td>→ downgraded model to GPT-5-mini</td>
           <td style="text-align:center">59.0%</td>
-          <td style="text-align:center">146 min</td>
-          <td style="text-align:center">Mid</td></tr>
-
-    </tbody>
-
-    <caption>
-    Table 2. Development-time tradeoffs showing how prompting strategy, example usage,
-    and model size influence accuracy and compute cost.
-    </caption>
+          <td style="text-align:center">146 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+        <tr>
+          <td><b>Highest scoring multilayer model</b> (7 filters, GPT-5.1, No-CoT, few-shot)</td>
+          <td style="text-align:center">73.9%</td>
+          <td style="text-align:center">20 mins</td>
+          <td style="text-align:center">High</td>
+        </tr>
+        <tr>
+          <td><b>GPT-5.2 multilayer comparison</b> (7 filters, GPT-5.2, optimized few-shot)</td>
+          <td style="text-align:center">66.9%</td>
+          <td style="text-align:center">73 mins</td>
+          <td style="text-align:center">Very High</td>
+        </tr>
+        <tr>
+          <td>→ manual True/False examples</td>
+          <td style="text-align:center">65.0%</td>
+          <td style="text-align:center">62 mins</td>
+          <td style="text-align:center">High</td>
+        </tr>
+        <tr>
+          <td>→ removed CoT prompt, no examples</td>
+          <td style="text-align:center">61.6%</td>
+          <td style="text-align:center">16 mins</td>
+          <td style="text-align:center">Mid</td>
+        </tr>
+      </tbody>
+      <caption>
+        Table 3. Development-time tradeoffs for single-layer and multilayer filters, showing the
+        accuracy, runtime, and complexity consequences of different prompt and model choices.
+      </caption>
     </table>
 
     <hr />
@@ -307,15 +430,26 @@
     <h2 id="conclusion">Conclusion &amp; Future Work</h2>
 
     <p>
-    Pre-embedding filtering offers an effective way to convert informal corporate communications into a dependable RAG knowledge base. By decomposing emails into claim-level statements and applying modular risk filters, inappropriate or low-value information is removed before embedding, improving privacy and retrieval quality. Empirical results show balanced accuracies around 73–74% under optimized prompting, consistent with the limits set by human annotation noise. The method demonstrates that ingestion-stage filtering materially strengthens RAG performance and reduces organizational risk.
+      Pre-embedding filtering of informal corporate communications can substantially improve the
+      safety and efficiency of enterprise RAG. Our claim-level pipeline removes most irrelevant
+      content while preserving the majority of important claims, operates near the human agreement
+      ceiling, and shrinks the vector store by roughly 81%, which also speeds up retrieval. Qualitative
+      probing confirms that discarded information is no longer recoverable by downstream RAG agents.
     </p>
 
     <h3>Future Work</h3>
     <p>
-    Next steps include extending the pipeline to chat logs and meeting transcripts, improving classifier stability and latency, expanding and clarifying annotation rubrics to increase agreement, adding redaction strategies alongside filtering, and incorporating cross-claim consistency checks using a structured organizational knowledge base.
+      Future expansions of would be expected to expand and refine claim-level annotations, extend the pipeline to chat and meeting
+      transcripts, explore redaction alongside filtering, reduce latency via lighter models, and make
+      retrieval explicitly risk-aware by using multilayer scores directly during search and generation.
     </p>
 
     <hr />
   </div>
 </body>
 </html>
+
+
+
+
+
