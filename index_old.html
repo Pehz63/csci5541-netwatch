@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Appropriateness Filtering for Corporate RAG Database Storage | CSCI 5541 (Fall 2025)</title>
+  <link rel="stylesheet" href="./files/bulma.min.css" />
+  <link rel="stylesheet" href="./files/styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com/" />
+  <link href="./files/css2" rel="stylesheet" />
+  <link href="./files/css" rel="stylesheet" />
+  <base href="." target="_blank" />
+  <style>
+    .wrapper{max-width:980px;margin:0 auto;padding:24px}
+    .sys-img img{width:100%;height:auto}
+    .authors-wrapper{display:flex;gap:18px;flex-wrap:wrap}
+    .author-container{display:flex;flex-direction:column;align-items:center}
+    .author-image img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#eee}
+    .taglist{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+    .kbd{background:#f5f5f5;border:1px solid #ddd;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:monospace}
+    .sys-img.teaser img{width:auto;max-height:420px;display:block;margin:0 auto}
+    table{margin:0 auto}
+    caption{caption-side:bottom;padding-top:8px}
+    .note{font-size:.95rem;color:#444}
+    .callout{background:#f7fbff;border:1px solid #cfe8ff;border-radius:10px;padding:12px}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1 style="font-family:'Lato',sans-serif;">Appropriateness Filtering of Claims for Corporate RAG Knowledge Base Storage</h1>
+    <h4 style="font-family:'Lato',sans-serif;">Fall 2025 · CSCI 5541 NLP · University of Minnesota</h4>
+    <h4 style="font-family:'Lato',sans-serif;">Team: NetWatch</h4>
+
+    <p class="tagline">Demonstration of methodology to increase enterprise RAG quality by <em>pre-embedding filtering</em> of claim-level content, pulled from informal communications such as email or Slack.</p>
+
+    <div class="authors-wrapper">
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Alex_B.png" alt="A. Berg" /></div>
+        <p><strong>Alex Berg</strong><br/><small><a href="mailto:ber00221@umn.edu">ber00221@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Zeph_J.jpg" alt="Z. Johnson" /></div>
+        <p><strong>Zephaniah Johnson</strong><br/><small><a href="mailto:joh15514@umn.edu">joh15514@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Alex_S.jpg" alt="A. Slinger" /></div>
+        <p><strong>Alex Slinger</strong><br/><small><a href="mailto:sling031@umn.edu">sling031@umn.edu</a></small></p>
+      </div>
+      <div class="author-container">
+        <div class="author-image"><img src="./files/Sunder_S.png" alt="S. Subramanian" /></div>
+        <p><strong>Sunder Subramanian</strong><br/><small><a href="mailto:subra287@umn.edu">subra287@umn.edu</a></small></p>
+      </div>
+    </div>
+
+    <br />
+
+    <div class="authors-wrapper">
+      <div class="publication-links">
+        <span class="link-block">
+          <a href="https://drive.google.com/file/d/11HSL7ODYLyLKkGlfHAZ_U88hyoZYXHGc/view?usp=drive_link" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Proposal Report</span></a>
+        </span>
+        <span class="link-block">
+          <a href="https://colab.research.google.com/drive/1HhQKr6h5e2XAdOrq29xhmdmbmksw4YQA?usp=drive_link" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Code</span></a>
+        </span>
+        <span class="link-block">
+          <a href="" class="external-link button is-normal is-rounded is-dark is-outlined"><span>Model Weights</span></a>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrapper">
+    <hr />
+
+    <h2 id="abstract">Abstract</h2>
+    <p>
+      Retrieval-Augmented Generation (RAG) quality depends on what gets embedded. Informal business channels (email/Slack) often mix valuable facts with personal, toxic, speculative, or sarcastic content. We propose a <b>pre-embedding filtering</b> framework that decomposes messages into claim-level units and scores each with a modular MoE of fine-tuned RoBERTa-large classifiers (relevance, tone/sarcasm, confidentiality/PII, toxicity, speculation/opinion, inconsistency). 
+    </p>  
+    <p>
+      In our demo we show a pipeline that downloads emails received to an <a href="mailto:netwatch5541@gmail.com">email address</a>, converts this email into specific claims, and then ranks the claims on various attributes to automatically decide which claims are kept and which are dropped; with retained claims keeping scores for downstream weighting. We will compare <i>pre-filtered RAG</i> against <i>vanilla RAG</i> and <i>LLM-prompted filtering</i>, studying compounding effects of layered filters on QA quality and safety within an enterprise domain.
+    </p>
+    <hr />
+
+    <h2 id="teaser">Teaser Figure</h2>
+    <p>High-level NetWatch flow: ingestion → claim extraction → modular filtering → embedding/storage → retrieval &amp; QA.</p>
+    <p class="sys-img teaser">
+      <img src="./files/full_workflow.png" alt="Project pipeline diagram" />
+    </p>
+    <h3 id="teaser-notes">Notes</h3>
+    <p class="note">Classifier scores are stored as metadata for retrieval-time re-weighting, allowing ambiguous claims to be down-ranked instead of hard-dropped.</p>
+    <hr />
+
+    <h2 id="introduction">Introduction / Background / Motivation</h2>
+    <p><b>Problem.</b> Enterprises rely on RAG over large internal corpora, but ~unstructured email/chat blends professional and personal content. Embedding inappropriate or unreliable text degrades retrieval and raises compliance risk.</p>
+    <p><b>Gap.</b> Prior work emphasizes post-retrieval tricks (graph fusion, RRF); little evaluates <i>source-level</i> filtering before embedding when full context (headers/threads) is available.</p>
+    <p><b>Hypothesis.</b> Appropriateness filtering at ingestion improves QA relevance and reduces PII/leak risk versus post-hoc ranking alone. Ambiguous claims (e.g., sarcasm intertwined with facts) are retained with metadata rather than blindly dropped.</p>
+    <hr />
+
+    <h2 id="approach">Approach</h2>
+    <div class="callout">
+      <ol>
+        <li><b>Ingestion.</b> Gmail for demo (IMAP via <code>imaplib</code>) + ENRON emails for testing (from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>). Email message parsed into text, headers, thread context.</li>
+        <li><b>Claim decomposition.</b> A claim creation, decomposition, and verification module—adapted from Microsoft’s “Claimify” methodology—splits messages into atomic claims; ambiguous spans preserved with context.</li>
+        <li><b>MoE filtering.</b> Current prototype uses an LLM pipeline: <b>“Claim 7-step CoT + 2-step ReAct classifier.ipynb”</b> implementing per-claim decision heads (Relevance, PII/Confidentiality, Tone/Sarcasm, Toxicity, Speculation/Opinion, Inconsistency). Finetuned RoBERTa-large heads are planned; LLM classifiers are the present default.</li>
+        <li><b>Storage & retrieval.</b> <code>Pinecone</code> index <code>netwatch-claims</code>, embeddings via OpenAI <code>text-embedding-3-large</code> (<code>3072</code> dims). Retrieve via ANN; semantic RRF ranking under construction.</li>
+        <li><b>QA agent.</b> LangChain + LangGraph tool calls (<code>lookup_in_rag</code>) wired to OpenAI <code>gpt-5-mini</code>. DSPy is used for more complex prompt/program structuring.</li>
+      </ol>
+    </div>
+    <p><b>Baselines.</b> (A) Vanilla RAG (no pre-filter). (B) RAG + LLM re-rank/filters (zero-/few-shot). (C) Optional: post-filter RRF only.</p>
+    <p><b>Novelty.</b> We evaluate ingestion-time, claim-level filtering in an informal-communications domain where appropriate and non-appropriate content co-exist within messages, and run end-to-end ablations to quantify compounding effects.</p>
+
+    <h3 id="impl">Overall Implementation Snapshot</h3>
+      <ul>
+        <li><b>Technologies:</b> Implemented in Python using Google Colab.
+        <ul>
+          <li><b>LLM:</b> OpenAI “GPT-5-mini” via API; DSPy for complex query/prompt structuring.</li>
+          <li><b>Vector database:</b> Pinecone (hosted on AWS <code>us-east-1</code>), orchestrated via LangGraph tool calls.</li>
+          <li><b>Embeddings:</b> OpenAI <code>text-embedding-3-large</code> with <code>EMBED_DIMS = 3072</code>.</li>
+          <li><b>Data I/O:</b> Email and claim DataFrames are persisted to Google Drive (XLSX) between sessions.</li>
+        </ul>
+        </li>
+        <li><b>Agent/UI:</b> LangGraph state graph with tool calling - linked to Gradio <code>ChatInterface</code>.</li>
+        <li><b>Email ingest:</b> IMAP to <code>netwatch5541@gmail.com</code>; appends rows to <code>gmail_msgs_df</code>.</li>
+        <li><b>Create Claims:</b> Convert complex <code>gmail_msgs_df</code> into <code>gmail_claims_df</code> </li>
+        <li><b>Filter Claims:</b> Score claims and append rankings to <code>gmail_claims_df</code> </li>
+        <li><b>Build DB:</b> <code>build_db()</code> embeds and indexes claims.</li>
+        <li><b>Retrieval:</b> <code>db_lookup()</code> and tool <code>lookup_in_rag</code> (currently with RRF placeholder).</li>
+
+      </ul>
+    <hr />
+
+    <h2 id="claimify">Claim Extraction Module</h2>
+    <p>
+        Our current Claim Creation prompt architecture is a 4 step method involving selection, where the claims are first curated by paraphrasing the email, disambiguation, where the claims are augmented with as much context as possible from the email and decomposition, where the claims are broken down to become independent claims.
+    </p>
+    <ul>
+      <li><b>Goal:</b> Robust claim segmentation + per-claim gating before embedding.</li>
+      <li><b>Flow:</b> (1) sentence spans → (2) minimal-claim refinement (CoT) → (3) entity/PII redaction candidates → (4) ReAct verification for uncertain cases.</li>
+      <li><b>Outputs:</b> list of claims with labels + rationales + confidence; metadata carried into retrieval for re-weighting.</li>
+      <li><b>Status:</b> running as LLM pipeline; finetuned heads planned for Relevance/PII/Tone first.</li>
+    </ul>
+
+    <hr />
+    <h2 id="data">Data</h2>
+    <p><b>Primary.</b> ~1,700 ENRON emails with tone/topic labels (email-level), sourced from the <a href="https://bailando.berkeley.edu/enron_email.html">Berkeley annotated archive</a>. For claim-level training/eval we are also considering to construct a synthetic composite set by inserting professional facts/QA pairs (from MeetingBank-QA-Summary) into non-professional ENRON emails, yielding mixed-context messages with groundable QA.</p>
+    <p><b>Claim extraction eval.</b> For our Claim Extraction we hope to ultimately Benchmark against Claimify-style datasets to ensure accurate splitting independent of LLM prompting.</p>
+    <hr />
+
+    <h2 id="results">Results</h2>
+
+    <p>
+    Our final empirical evaluation produced two quantitative result sets:
+    (1) ablation experiments measuring balanced accuracy for alternative prompting and classifier
+    architectures, and (2) a development-time tradeoff table comparing model latency versus accuracy.
+    These constitute the full numerical results of the completed project.
+    </p>
+
+    <!-- ============================= -->
+    <!-- Table 1 — Ablation Results    -->
+    <!-- ============================= -->
+
+    <h3>Ablation Performance (Balanced Accuracy)</h3>
+
+    <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th style="text-align:center">Model Version</th>
+        <th style="text-align:center">Balanced Accuracy</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr><td><b>Final single-prompt model</b> (1 filter, GPT-5.1, optimized Few-shot)</td>
+          <td style="text-align:center">73.0%</td></tr>
+
+      <tr><td>→ manual True/False examples</td>
+          <td style="text-align:center">72.7%</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">71.2%</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">71.4%</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">70.8%</td></tr>
+
+      <tr><td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">61.0%</td></tr>
+
+      <tr><td><b>Final multilayer model</b> (7 filters, GPT-5.1, No-CoT Few-shot)</td>
+          <td style="text-align:center">73.9%</td></tr>
+
+      <tr><td>Multilayer (with CoT, True/False Few-shot)</td>
+          <td style="text-align:center">62.1%</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">63.2%</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">63.6%</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">73.1%</td></tr>
+
+      <tr><td>→ downgraded model to GPT-5-mini</td>
+          <td style="text-align:center">59.0%</td></tr>
+
+    </tbody>
+    <caption>
+    Table 1. Balanced accuracy across ablation settings measuring the contribution of CoT,
+    example selection, prompting depth, and LLM choice.
+    </caption>
+    </table>
+
+    <hr/>
+
+    <!-- ============================================= -->
+    <!-- Table 2 — Model Development Time vs Accuracy  -->
+    <!-- ============================================= -->
+
+    <h3>Model Development Accuracy & Compute Time</h3>
+
+    <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th style="text-align:center">Model Version</th>
+        <th style="text-align:center">Balanced Accuracy</th>
+        <th style="text-align:center">Compute Time</th>
+        <th style="text-align:center">Complexity</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <tr><td><b>Final multilayer model</b> — 1 filter, GPT-5-mini, zero-shot</td>
+          <td style="text-align:center">61.0%</td>
+          <td style="text-align:center">17 min</td>
+          <td style="text-align:center">Very Low</td></tr>
+
+      <tr><td>→ adjusted to GPT-5.1</td>
+          <td style="text-align:center">70.8%</td>
+          <td style="text-align:center">2 min</td>
+          <td style="text-align:center">Very Low</td></tr>
+
+      <tr><td>→ adjusted to CoT</td>
+          <td style="text-align:center">71.4%</td>
+          <td style="text-align:center">15 min</td>
+          <td style="text-align:center">Low</td></tr>
+
+      <tr><td>→ adjusted to 2 True examples</td>
+          <td style="text-align:center">71.2%</td>
+          <td style="text-align:center">18 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ adjusted to 2 True + 1 False example</td>
+          <td style="text-align:center">72.7%</td>
+          <td style="text-align:center">20 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ adjusted to optimized examples</td>
+          <td style="text-align:center">71.2%</td>
+          <td style="text-align:center">24 min</td>
+          <td style="text-align:center">Very High</td></tr>
+
+      <tr><td><b>Final multilayer model</b> — 7 filters, GPT-5.1, No-CoT Few-shot</td>
+          <td style="text-align:center">73.9%</td>
+          <td style="text-align:center">20.4 min</td>
+          <td style="text-align:center">High</td></tr>
+
+      <tr><td>Comparison multilayer — 7 filters, GPT-5.1, CoT Few-shot</td>
+          <td style="text-align:center">62.1%</td>
+          <td style="text-align:center">155 min</td>
+          <td style="text-align:center">Very High</td></tr>
+
+      <tr><td>→ removed False counter examples</td>
+          <td style="text-align:center">63.2%</td>
+          <td style="text-align:center">99 min</td>
+          <td style="text-align:center">High</td></tr>
+
+      <tr><td>→ removed all examples (Zero-shot)</td>
+          <td style="text-align:center">63.6%</td>
+          <td style="text-align:center">110 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ removed CoT prompt</td>
+          <td style="text-align:center">73.1%</td>
+          <td style="text-align:center">90 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+      <tr><td>→ downgraded to GPT-5-mini</td>
+          <td style="text-align:center">59.0%</td>
+          <td style="text-align:center">146 min</td>
+          <td style="text-align:center">Mid</td></tr>
+
+    </tbody>
+
+    <caption>
+    Table 2. Development-time tradeoffs showing how prompting strategy, example usage,
+    and model size influence accuracy and compute cost.
+    </caption>
+    </table>
+
+    <hr />
+
+    <h2 id="conclusion">Conclusion &amp; Future Work</h2>
+
+    <p>
+    Pre-embedding filtering offers an effective way to convert informal corporate communications into a dependable RAG knowledge base. By decomposing emails into claim-level statements and applying modular risk filters, inappropriate or low-value information is removed before embedding, improving privacy and retrieval quality. Empirical results show balanced accuracies around 73–74% under optimized prompting, consistent with the limits set by human annotation noise. The method demonstrates that ingestion-stage filtering materially strengthens RAG performance and reduces organizational risk.
+    </p>
+
+    <h3>Future Work</h3>
+    <p>
+    Next steps include extending the pipeline to chat logs and meeting transcripts, improving classifier stability and latency, expanding and clarifying annotation rubrics to increase agreement, adding redaction strategies alongside filtering, and incorporating cross-claim consistency checks using a structured organizational knowledge base.
+    </p>
+
+    <hr />
+  </div>
+</body>
+</html>
